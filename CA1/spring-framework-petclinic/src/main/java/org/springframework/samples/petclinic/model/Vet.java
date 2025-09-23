@@ -49,6 +49,19 @@ public class Vet extends Person {
         inverseJoinColumns = @JoinColumn(name = "specialty_id"))
     private Set<Specialty> specialties;
 
+    @Column(name = "professionalLicenseNumber")
+    @NotEmpty
+    private String professionalLicenseNumber;
+
+    public String getProfessionalLicenseNumber() {
+        return this.professionalLicenseNumber;
+    }
+
+    public void setProfessionalLicenseNumber(String professionalLicenseNumber) {
+        this.professionalLicenseNumber = professionalLicenseNumber;
+    }
+
+
     protected Set<Specialty> getSpecialtiesInternal() {
         if (this.specialties == null) {
             this.specialties = new HashSet<>();
