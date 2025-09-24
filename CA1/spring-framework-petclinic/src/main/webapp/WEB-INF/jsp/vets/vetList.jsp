@@ -13,6 +13,7 @@
             <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Specialties</th>
+                <th scope="col">License Number</th>
             </tr>
             </thead>
             <tbody>
@@ -26,6 +27,9 @@
                             <c:out value="${specialty.name} "/>
                         </c:forEach>
                         <c:if test="${vet.nrOfSpecialties == 0}">none</c:if>
+                    </td>
+                    <td>
+                        <c:out value="${vet.professionalLicenseNumber}"/>
                     </td>
                 </tr>
             </c:forEach>
