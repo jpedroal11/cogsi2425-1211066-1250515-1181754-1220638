@@ -2,20 +2,66 @@
 
 This repository is about **Git**.
 
+Git is a distributed version control system that tracks changes in source code, enabling collaboration and history management.
 
-Exercise
+## Basic Git Commands
+- `git init`: Initialize a new Git repository.
 
-1.Create a tag with v1.1.0
+![git.png](img/git_init.png)
+
+- `git clone <repository-url>`: Clone an existing repository.
+
+![git_clone.png](img/git_clone.png)
+
+- `git add <file>`: Stage changes for the next commit.
+
+![git_add.png](img/git_add.png)
+
+
+- `git commit -m "message"`: Commit staged changes with a message.
+
+![img.png](img/git_commit.png)
+
+- `git status`: Check the status of the working directory and staging area.
+  
+![git_status.png](img/git_status.png)
+
+
+- `git log`: View the commit history.
+
+![git_log.png](img/git_log.png)
+
+
+- `git branch`: List, create, or delete branches.
+
+
+## Exercise
+
+1. Check current commit using
 ```
-git tag v1.0 <commit-hash>
+git log --oneline
+
 ```
 
-2.Add a value to Vet
+This will return the commit hash and the commit message.
+
+2. Create a tag with v1.1.0
+```
+git tag v1.1.0 34c3805
+
+```
+This will create a tag named v1.1.0 at the specified commit hash.
+
+
+3. Add a value to Vet
 ```java
     private String professionalLicenseNumber;
 
 ```
-3.Added value to database
+
+Exercise requires to add a new attribute to Vet class
+
+4. Added value to database
 
 ```
 INSERT INTO vets VALUES (default, 'Rafael', 'Ortega','57484542342342');
@@ -28,10 +74,31 @@ CREATE TABLE vets (
   professionalLicenseNumber VARCHAR(30)
 );
 ```
+Exercise requires to add a new column to vets table and insert a new vet with the new attribute
+
+5. Added the commits
+
+- Implemented 'professionalLicenseNumber' in Vet class
+    - git add .
+    - git commit -m "implemented 'professionalLicenseNumber' in Vet class"
+    - git push
+
+- Implemented 'Database changed' in Vet class
+    - git add .
+    - git commit -m "implemented 'Database changed' in Vet class"
+    - git push
+
+- Added license number column to vets table (Vet frontend)
+    - git add .
+    - git commit -m "add license number column to vets table"
+    - git push
 
 
-4. Idintify the commmit
+6. Identify the commit
 ```
    git log --oneline
 ```
+
+7. Revert the commit
+
 
