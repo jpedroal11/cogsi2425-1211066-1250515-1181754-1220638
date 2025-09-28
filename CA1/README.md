@@ -111,3 +111,18 @@ Exercise requires to add a new column to vets table and insert a new vet with th
     ```
     git revert 019a507
     ```
+8. Show default branch and the last commit
+
+    To identify the repository’s default branch, the following command was used:
+
+     ```
+    git symbolic-ref refs/remotes/origin/HEAD
+    ```
+
+    Extra: For a cleaner output:
+
+     ```
+    git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
+    ```
+
+    ![img.png](img/git_default_branch.png)    
