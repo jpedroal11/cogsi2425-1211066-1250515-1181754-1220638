@@ -101,4 +101,13 @@ Exercise requires to add a new column to vets table and insert a new vet with th
 
 7. Revert the commit
 
+    In order to implement revert functionality, an helper commit was added to the repository
 
+    ![img.png](img/git_revert.png)
+
+    In this specific case HEAD was used instead of the actual commit id as it was the last one, but this revert could also be done running this command:
+
+
+    ```
+    git revert 019a507
+    ```
