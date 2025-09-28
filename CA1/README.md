@@ -101,4 +101,4 @@ Exercise requires to add a new column to vets table and insert a new vet with th
 
 7. Revert the commit
 
-
+This commit is only being done to revert in the next commit
