@@ -154,3 +154,29 @@ ca1-part1
     ```
 
     ![img.png](img/git_tag.png)
+
+11. Add an email field for a vet, so let’s  first create a branch named after the feature:
+
+    ![img.png](img/git_new_branch.png)    
+
+12. Create the email field and database
+
+```java
+
+ private String email;
+
+```
+
+
+13. It was commited and pushed to the email-field branch
+
+
+![img.png](img/git_add_email_field.png)    
+
+
+14. It was tested to see if it is ok
+
+![img.png](img/git_test_tests.png)    
+
+
+15. It was
