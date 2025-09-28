@@ -126,3 +126,22 @@ Exercise requires to add a new column to vets table and insert a new vet with th
     ```
 
     ![img.png](img/git_default_branch.png)    
+
+9. Show distinct contributors
+
+    To show the contributions done by each person, the following command was run:
+
+     ```
+        git shortlog
+    ```
+    
+    To get a more simple log these flags were used:
+
+    - '-s' to only show the number of commits by contributor;
+    - '-n' to sort the ouput numerically; 
+
+    ```
+        git shortlog -s -n
+    ```
+
+    ![img.png](img/git_shortlog.png)
