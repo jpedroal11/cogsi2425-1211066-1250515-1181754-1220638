@@ -145,3 +145,12 @@ Exercise requires to add a new column to vets table and insert a new vet with th
     ```
 
     ![img.png](img/git_shortlog.png)
+
+10. At the end of the assignment mark your commit with the tag
+ca1-part1
+
+    ```
+        git tag ca1-part1
+    ```
+
+    ![img.png](img/git_tag.png)
