@@ -206,3 +206,21 @@ git tag v1.3.0
 
 git push origin v1.3.0
 ```
+
+17. Merge confilcts
+
+There are 2 branches in our repo, 'main' and 'email-field'. As main was already 1 commit ahead of 'email-field', I just edited the file with current changes in 'main' and ran:
+
+```
+git merge main
+```
+
+As you can see in the print below, I got conlficts as expected and then procedeed to vscode to handle the merge conflicts
+
+![img.png](img/git_merge_conflicts.png)
+
+The image below is the actual conflict in vscode:
+
+![img.png](img/git_merge_conflicts_code.png)
+
+I added a simple line: "MERGE CONFLICT" to purposely cause this merge conflict. And finalised by accepting the incoming changes from main after running.
