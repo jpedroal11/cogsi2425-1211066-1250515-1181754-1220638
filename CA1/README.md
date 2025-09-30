@@ -224,3 +224,15 @@ The image below is the actual conflict in vscode:
 ![img.png](img/git_merge_conflicts_code.png)
 
 I added a simple line: "MERGE CONFLICT" to purposely cause this merge conflict. And finalised by accepting the incoming changes from main after running.
+
+18. Which local branch is configured to track which remote
+branch?
+
+    To check which local branches are tracking which remote branches, the folowing command was run:
+
+    ```
+    git branch -vv
+
+    ```
+
+    ![img.png](img/git_branch_tracking.png)
