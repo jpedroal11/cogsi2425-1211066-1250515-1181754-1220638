@@ -179,6 +179,30 @@ ca1-part1
 ![img.png](img/git_test_tests.png)    
 
 
-15. It was
+15. Then it was merged into main
 
-MERGE CONFLICT
+
+```
+git checkout main && git pull origin main && git merge email-field && git push origin main
+```
+- `git checkout main`  
+  Switches to the `main` branch.
+
+- `git pull origin main`  
+  Updates your local `main` with the latest changes from the remote repository.
+
+- `git merge email-field`  
+  Merges the changes from the `email-field` branch into `main`.
+
+- `git push origin main`  
+  Pushes the updated `main` (now with merged changes) back to the remote repository.
+
+![img.png](img/git_merge.png)
+
+16. Create a tag for v1.3.0
+
+```
+git tag v1.3.0
+
+git push origin v1.3.0
+```
