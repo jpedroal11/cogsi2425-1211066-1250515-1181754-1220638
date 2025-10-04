@@ -610,7 +610,7 @@ Verify:
 
 ![img.png](img/fossil_timeline_part2.png)
 
-## Fossil vs Git Command Comparison
+# Fossil vs Git Command Comparison
 
 | Task | Git | Fossil |
 |------|-----|--------|
@@ -652,3 +652,12 @@ fossil ui
 - More hosting options (GitHub, GitLab)
 - More third-party tools
 - Flexible history editing
+
+# Team Self-Assessment
+
+| Name | Tasks | Work Distribution |
+|------|-------|-----------------|
+| **Pedro Leal** | Git implementation (Part 1 and Part 2) | 25% |
+| **Martim Oliveira** | Git implementation (Part 1 and Part 2) | 25% |
+| **Gabriel Costa** | Fossil implementation (Part 1) | 25% |
+| **Diogo Gomes** | Fossil implementation (Part 2) | 25% |
