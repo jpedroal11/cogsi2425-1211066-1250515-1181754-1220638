@@ -440,3 +440,215 @@ Navigate to Timeline to see all contributions by user.
 Through the Fossil UI, you can view the commits of the project:
 
   ![img.png](img/fossil_timeline_part1.png)
+
+## Part 2 - Branches
+
+### 11. To Add an email field for a vet, first, create a branch named after the feature:
+
+```cmd
+fossil branch new email-field trunk
+fossil update email-field
+```
+
+Verify you're on the correct branch:
+
+```cmd
+C:\CA1-Fossil\petclinic-work> fossil branch current
+email-field
+```
+
+### 12. Create the email field and database
+
+Add to Vet.java:
+
+```java
+private String email;
+```
+
+Update schema.sql and data.sql accordingly.
+
+### 13. Commit to the email-field branch
+
+```cmd
+C:\CA1-Fossil\petclinic-work> fossil status
+repository:   C:\CA1-Fossil\petclinic.fossil
+local-root:   C:\CA1-Fossil\petclinic-work\
+checkout:     abc123def456... 2025-10-03 02:30:00 UTC
+tags:         email-field
+comment:      Added email field (user: username)
+changes:      None. Use "fossil changes" for more details
+
+EDITED    src/main/java/org/springframework/samples/petclinic/model/Vet.java
+EDITED    src/main/resources/db/h2/schema.sql
+EDITED    src/main/resources/db/h2/data.sql
+
+C:\CA1-Fossil\petclinic-work> fossil commit -m "Added email field"
+New_Version: def789ghi012...
+
+C:\CA1-Fossil\petclinic-work> fossil status
+repository:   C:\CA1-Fossil\petclinic.fossil
+local-root:   C:\CA1-Fossil\petclinic-work\
+checkout:     def789ghi012... 2025-10-03 02:31:00 UTC
+tags:         email-field
+comment:      Added email field (user: username)
+changes:      None
+```
+
+### 14. Test to see if it is ok
+
+```cmd
+C:\CA1-Fossil\petclinic-work> mvnw.cmd clean test
+
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 62, Failures: 0, Errors: 0, Skipped: 0
+[INFO]
+```
+
+### 15. Merge into trunk
+
+```cmd
+fossil update trunk
+fossil merge email-field
+fossil commit -m "Merged email-field branch into trunk"
+```
+
+Explanation of commands:
+
+• `fossil update trunk`
+  Switches to the trunk branch.
+
+• `fossil merge email-field`
+  Merges the changes from the email-field branch into trunk.
+
+• `fossil commit -m "Merged email-field branch into trunk"`
+  Commits the merge.
+
+![img.png](img/fossil_updatetrunk_part2.png)
+
+### 16. Create a tag for v1.3.0
+
+```cmd
+fossil tag add v1.3.0 current
+```
+
+Verify:
+
+![img.png](img/fossil_addv1.3.0tag.png)
+
+### 17. Merge conflicts
+
+There are 2 branches in our repo, 'trunk' and 'email-field'. As trunk was already 1 commit ahead of 'email-field', edit the file with the current changes in 'trunk' and run:
+
+```cmd
+fossil update email-field
+fossil merge trunk
+```
+
+This creates a merge conflict as expected:
+
+![img.png](img/fossil_merge_conflicts.png)
+
+The conflict appears in the file with markers:
+
+```
+<<<<<<< BEGIN MERGE CONFLICT: local copy shown first
+Added documentation of this section
+||||||| COMMON ANCESTOR content follows
+======= MERGED IN content follows
+commit to merge conflict in main
+>>>>>>> END MERGE CONFLICT
+```
+
+For testing, we just added a simple line: "MERGE CONFLICT" on fossil.md to purposely cause this merge conflict. After editing the file to resolve conflicts (removing markers and keeping desired content), we ran:
+
+```cmd
+fossil commit -m "Resolved merge conflicts"
+```
+
+### 18. Which local branch is configured to track which remote branch?
+
+To check which local branches exist and the current branch:
+
+![img.png](img/fossil_branch_list.png)
+
+To see detailed branch information:
+
+```cmd
+fossil branch list -t
+```
+
+To check remote configuration:
+
+```cmd
+fossil remote list
+```
+
+Or view in web interface:
+
+```cmd
+fossil ui
+```
+
+Navigate to: Branches → Branch List
+
+![img.png](img/fossil_branch_list_ui.png)
+
+### 19. At the end of the assignment mark your commit with the tag ca1-part2
+
+```cmd
+fossil tag add ca1-part2 current
+```
+
+Verify:
+
+![img.png](img/fossil_tag_list.png)
+
+![img.png](img/fossil_19.png)
+
+### Timeline - Part 2
+
+![img.png](img/fossil_timeline_part2.png)
+
+## Fossil vs Git Command Comparison
+
+| Task | Git | Fossil |
+|------|-----|--------|
+| Initialize | `git init` | `fossil init repo.fossil` |
+| Open repository | Automatic | `fossil open repo.fossil` |
+| Add files | `git add .` | `fossil add .` |
+| Commit | `git commit -m "msg"` | `fossil commit -m "msg"` |
+| Push | `git push` | `fossil push` (if remote configured) |
+| Pull | `git pull` | `fossil pull && fossil update` |
+| Status | `git status` | `fossil status` |
+| History | `git log` | `fossil timeline` |
+| Create branch | `git branch name` | `fossil branch new name trunk` |
+| Switch branch | `git checkout name` | `fossil update name` |
+| Merge | `git merge name` | `fossil merge name` |
+| Tag | `git tag v1.0` | `fossil tag add v1.0 current` |
+| Diff | `git diff` | `fossil diff` |
+| Revert | `git revert hash` | `fossil undo` or backout merge |
+| Clone | `git clone url` | `fossil clone url repo.fossil` |
+
+## Web Interface
+
+To view the repository graphically:
+
+```cmd
+fossil ui
+```
+
+## Key Differences
+
+**Fossil**
+- Single file repository (easy backup)
+- Built-in web UI (`fossil ui`)
+- Built-in wiki and bug tracker
+- No staging area (simple workflow)
+- Immutable history (reliable)
+
+**Git**
+- More popular (larger community)
+- More hosting options (GitHub, GitLab)
+- More third-party tools
+- Flexible history editing
