@@ -33,6 +33,12 @@ test {
     useJUnitPlatform()
 
     systemProperty 'java.awt.headless', 'true'
+
+    test {
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
 }
 jar {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE // allow duplicates
