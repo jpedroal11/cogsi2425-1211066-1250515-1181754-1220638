@@ -25,8 +25,15 @@ dependencies {
     // Use Apache Log4J for logging
     implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.2'
     implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
 }
- 
+
+test {
+    useJUnitPlatform()
+
+    systemProperty 'java.awt.headless', 'true'
+}
 jar {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE // allow duplicates
 
