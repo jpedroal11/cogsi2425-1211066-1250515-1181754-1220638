@@ -64,12 +64,115 @@ And two clients running:
 
 2. Add a runServer task
 
+With this we can simply add a task to run the server from gradle:
+````gradle
+task runServer(type:JavaExec, dependsOn: classes){
+    group="DevOps"
+    description = "Launches a chat Server that connects to a server on localhost:59002"
+    classpath=sourceSets.main.runtimeClasspath
+    mainClass= 'basic_demo.ChatServerApp'
+    args '59001'
+
+}
+
+````
+
+- In here we define a task of type JavaExec, which is used to run a Java application. 
+- We set it to depend on the classes task, ensuring that the project is compiled before running the server.
+- We set the group and description for better organization and understanding of the task.
+- We set the classpath to the runtime classpath of the main source set, ensuring that all necessary classes and dependencies are available when running the server.
+- We specify the main class to be executed, which is basic_demo.ChatServerApp.
+- We provide the argument '59001' to specify the port on which the server will listen for incoming connections.
+
+Then we can run the server with:
+
+````
+./gradlew runServer
+````
+
+
+![img.png](img/gradle_runServer.png)
+
+
+3. Add a simple unit test and update the Gradle build script so that it can execute the test
+
+
+Added a simple test to check if the server starts correctly:
+
+````java
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import javax.swing.*;
+
+public class ChatClientTest {
+
+    @Test
+    public void testClientInitialization() {
+        // Run Swing code on the event dispatch thread (safe for Swing testing)
+        SwingUtilities.invokeLater(() -> {
+            ChatClient client = new ChatClient("localhost", 59001);
+
+            assertNotNull(client, "ChatClient should be created");
+            assertTrue(client instanceof ChatClient, "Should be instance of ChatClient");
+        });
+    }
+
+
+}
+
+
+````
+
+
+Also added the test implementation dependency to the build.gradle file:
+
+````gradle
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+
+````
+
+
+In the script:
+````gradle
+
+test {
+    useJUnitPlatform()
+
+    systemProperty 'java.awt.headless', 'true'
+
+    test {
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+````
+
+It will configure the test task to use the JUnit Platform for running tests, which is necessary for JUnit 5. And also to dictate if the test passes, fails or is skipped.
 
 
 
+![img.png](img/gradle_test.png)
 
 
 
+4. Created a baclkup task to copy the source files to a backup directory
+
+````gradle
+
+
+task backupSources(type: Copy) {
+    from 'src'
+    into "$buildDir/backup"
+}
+````
+
+This task will copy all files from the src directory to a backup directory located at build/backup within the project structure.
+
+
+![img.png](img/gradle_backup.png)
 
 
 
