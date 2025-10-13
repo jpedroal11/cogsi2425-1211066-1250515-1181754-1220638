@@ -223,3 +223,13 @@ are used without requiring manual installation
 
     **Output:**
     ![img.png](img/gradle_java_tool_chain.png) 
+7. Added a tag to the repo 
+
+```gradle
+
+git tag ca2-part1
+
+git push origin ca2-part1
+
+
+```
