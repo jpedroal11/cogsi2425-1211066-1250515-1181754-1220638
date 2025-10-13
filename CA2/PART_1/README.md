@@ -161,8 +161,6 @@ It will configure the test task to use the JUnit Platform for running tests, whi
 4. Created a baclkup task to copy the source files to a backup directory
 
 ````gradle
-
-
 task backupSources(type: Copy) {
     from 'src'
     into "$buildDir/backup"
@@ -175,5 +173,22 @@ This task will copy all files from the src directory to a backup directory locat
 ![img.png](img/gradle_backup.png)
 
 
+5. Add a new task of type Zip to be used to make an archive of the backup of the application
 
+
+    ````gradle
+    task backupZip(type: Zip) {
+        from "$buildDir/backup"
+        archiveFileName = "application-backup-${new Date().format('yyyyMMdd-HHmmss')}.zip"
+        destinationDirectory = file("${buildDir}/archives")
+        
+        dependsOn backupSources
+        
+        onlyIf {
+            file("$buildDir/backup").exists() && file("$buildDir/backup").list().length > 0
+        }
+    }
+    ````
+
+    This Gradle task creates a timestamped ZIP file from your backup folder only if it contains files.
 

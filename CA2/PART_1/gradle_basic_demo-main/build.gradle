@@ -79,3 +79,14 @@ task backupSources(type: Copy) {
     into "$buildDir/backup"
 }
 
+task backupZip(type: Zip) {
+    from "$buildDir/backup"
+    archiveFileName = "application-backup-${new Date().format('yyyyMMdd-HHmmss')}.zip"
+    destinationDirectory = file("${buildDir}/archives")
+    
+    dependsOn backupSources
+    
+    onlyIf {
+        file("$buildDir/backup").exists() && file("$buildDir/backup").list().length > 0
+    }
+}
