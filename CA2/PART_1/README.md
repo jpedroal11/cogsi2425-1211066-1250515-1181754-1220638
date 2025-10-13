@@ -192,3 +192,34 @@ This task will copy all files from the src directory to a backup directory locat
 
     This Gradle task creates a timestamped ZIP file from your backup folder only if it contains files.
 
+6. Explain how the Gradle Wrapper and the JDK Toolchain ensure
+the correct versions of Gradle and the Java Development Kit
+are used without requiring manual installation
+
+     ````gradle
+    ./gradlew -q javaToolchain
+    ````
+
+    This project automatically manages build tools to ensure consistent results:
+
+    **Gradle Wrapper**
+
+    - Uses the gradlew script to control Gradle version
+
+    - Downloads the exact Gradle version needed for this project
+
+    - No manual Gradle installation required
+
+    **JDK Toolchain**
+
+    - Automatically finds and uses the correct Java version
+
+    - Configured in build.gradle to specify required JDK
+
+    - Works with existing JDK installations or downloads if needed
+
+    - Verify Setup
+
+
+    **Output:**
+    ![img.png](img/gradle_java_tool_chain.png) 
