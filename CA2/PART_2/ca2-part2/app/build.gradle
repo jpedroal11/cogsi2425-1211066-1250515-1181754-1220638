@@ -202,3 +202,49 @@ tasks.register("packageJavadoc", Zip) {
         println "Javadoc packaged: ${archiveFile.get()}"
     }
 }
+
+// --- Integration Test Source Set ---
+sourceSets {
+    integrationTest {
+        java {
+            srcDir 'src/integrationTest/java'
+        }
+        resources {
+            srcDir 'src/integrationTest/resources'
+        }
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+    integrationTestCompileClasspath.extendsFrom testCompileClasspath
+    integrationTestRuntimeClasspath.extendsFrom testRuntimeClasspath
+}
+
+// Add explicit JUnit Platform dependency for integration tests
+dependencies {
+    integrationTestImplementation 'org.junit.platform:junit-platform-launcher'
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter-engine'
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter-api'
+}
+
+tasks.register("integrationTest", Test) {
+    description = "Runs integration tests."
+    group = "verification"
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    shouldRunAfter test
+    useJUnitPlatform()
+    
+    // Add test logging to see what's happening
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+}
+
+// Make integrationTest part of the check lifecycle
+check.dependsOn integrationTest

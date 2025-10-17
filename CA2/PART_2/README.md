@@ -248,3 +248,62 @@ In order to check that it actually ran successfully:
     pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)> ls -la app/build/docs/app-0.0.1-SNAPSHOT-javadoc.zip
     -rw-r--r--  1 pedroleal  staff  79368 Oct 17 19:13 app/build/docs/app-0.0.1-SNAPSHOT-javadoc.zip
     pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)> 
+
+## Create a new source set for integration tests
+
+A dedicated source set for integration tests was created to separate unit tests from broader integration tests. This configuration allows for comprehensive testing of Spring Boot components working together while maintaining clean test organization.
+
+### **Integrantion tests**
+
+    @SpringBootTest
+    public class EmployeeIntegrationTest {
+        
+        @Autowired
+        private ApplicationContext applicationContext;
+
+        @Test
+        public void contextLoads() {
+            // Verify Spring context loads
+            assertNotNull(applicationContext);
+        }
+
+        @Test
+        public void mainApplicationBeanExists() {
+            // Verify the main application class is in the context
+            PayrollApplication mainApp = applicationContext.getBean(PayrollApplication.class);
+            assertNotNull(mainApp);
+        }
+    }
+
+#### **Test Summary**
+
+ #### contextLoads() Test:
+
+    Purpose: Verifies the complete Spring Boot application context initializes successfully
+
+    What it validates: All Spring beans are properly configured, dependency injection works, no missing dependencies or configuration errors
+
+    Importance: Ensures the application can start up without runtime failures
+
+ #### mainApplicationBeanExists() Test:
+
+    Purpose: Confirms the main application class is properly registered as a Spring bean
+
+    What it validates: Spring Boot auto-configuration correctly detects and wires the main application class
+
+    Importance: Verifies the core application component is available in the context
+
+### Output
+
+    pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)> ./gradlew integrationTest
+
+    > Task :app:integrationTest
+
+    EmployeeIntegrationTest > contextLoads() PASSED
+
+    EmployeeIntegrationTest > mainApplicationBeanExists() PASSED
+
+    BUILD SUCCESSFUL in 2s
+    3 actionable tasks: 1 executed, 2 up-to-date
+    pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)>
+*Note: Note: The complete output includes detailed Spring Boot startup logs showing full application context initialization, JPA repository configuration, H2 database setup, and sample data loading. These details have been omitted for brevity.*
