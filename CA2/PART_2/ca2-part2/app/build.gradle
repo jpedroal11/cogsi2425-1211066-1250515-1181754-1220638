@@ -187,3 +187,18 @@ tasks.register("runFromDist") {
         }
     }
 }
+
+// --- packageJavadoc task ---
+tasks.register("packageJavadoc", Zip) {
+    group = "documentation"
+    description = "Zips generated Javadoc"
+    dependsOn 'javadoc'
+
+    from javadoc.destinationDir
+    archiveFileName = "${project.name}-${project.version}-javadoc.zip"
+    destinationDirectory = layout.buildDirectory.dir("docs")
+    
+    doLast {
+        println "Javadoc packaged: ${archiveFile.get()}"
+    }
+}

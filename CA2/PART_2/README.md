@@ -220,3 +220,31 @@ On the left terminal the **runFromDist** task is run and then to verify its actu
 ![img.png](img/gradle_runFromDist_task.png)
 *Left: Task execution showing successful startup with PID 63680*  
 *Right: API verification returning employee data*
+
+## Create a custom task that depends on the javadoc task
+
+A custom Gradle task was created to automate the generation and packaging of project documentation. The task seamlessly integrates Javadoc generation with archival packaging, producing a distributable documentation ZIP file.
+
+    pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)> ./gradlew packageJavadoc
+
+    > Task :app:javadoc
+    /Users/pedroleal/Desktop/ISEP/1semestre/COGSI/sprint1-git/cogsi2425-1211066-1250515-1181754/CA2/PART_2/ca2-part2/app/src/main/java/payroll/PayrollApplication.java:7: warning: no comment
+    public class PayrollApplication {
+        ^
+    /Users/pedroleal/Desktop/ISEP/1semestre/COGSI/sprint1-git/cogsi2425-1211066-1250515-1181754/CA2/PART_2/ca2-part2/app/src/main/java/payroll/PayrollApplication.java:9: warning: no comment
+            public static void main(String... args) {
+                            ^
+    2 warnings
+
+    > Task :app:packageJavadoc
+    Javadoc packaged: /Users/pedroleal/Desktop/ISEP/1semestre/COGSI/sprint1-git/cogsi2425-1211066-1250515-1181754/CA2/PART_2/ca2-part2/app/build/docs/app-0.0.1-SNAPSHOT-javadoc.zip
+
+    BUILD SUCCESSFUL in 956ms
+    3 actionable tasks: 2 executed, 1 up-to-date
+*Note: The warnings are standard Javadoc reminders about missing code comments and do not affect the functionality of the generated documentation package.*
+
+In order to check that it actually ran successfully:
+
+    pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)> ls -la app/build/docs/app-0.0.1-SNAPSHOT-javadoc.zip
+    -rw-r--r--  1 pedroleal  staff  79368 Oct 17 19:13 app/build/docs/app-0.0.1-SNAPSHOT-javadoc.zip
+    pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)> 
