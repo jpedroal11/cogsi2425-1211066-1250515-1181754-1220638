@@ -1,0 +1,56 @@
+# WORKSPACE
+workspace(name = "payroll_service")
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+# Setup rules_jvm_external for Maven dependencies
+RULES_JVM_EXTERNAL_TAG = "5.3"
+RULES_JVM_EXTERNAL_SHA = "d31e369b854322ca5098ea12c69d7175ded971435e55c18dd9dd5f29cc5249ac"
+
+http_archive(
+    name = "rules_jvm_external",
+    strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
+    sha256 = RULES_JVM_EXTERNAL_SHA,
+    url = "https://github.com/bazelbuild/rules_jvm_external/releases/download/%s/rules_jvm_external-%s.tar.gz" % (RULES_JVM_EXTERNAL_TAG, RULES_JVM_EXTERNAL_TAG)
+)
+
+load("@rules_jvm_external//:defs.bzl", "maven_install")
+
+# Define all Maven dependencies
+maven_install(
+    artifacts = [
+        # Spring Boot dependencies
+        "org.springframework.boot:spring-boot-starter-data-jpa:3.2.0",
+        "org.springframework.boot:spring-boot-starter-web:3.2.0",
+        "org.springframework.boot:spring-boot-starter:3.2.0",
+        "org.springframework.boot:spring-boot:3.2.0",
+        "org.springframework.boot:spring-boot-autoconfigure:3.2.0",
+        "org.springframework.hateoas:spring-hateoas:2.1.0",
+        
+        # Spring Framework
+        "org.springframework:spring-web:6.1.0",
+        "org.springframework:spring-context:6.1.0",
+        "org.springframework.data:spring-data-jpa:3.2.0",
+        
+        # Jakarta & JPA
+        "jakarta.persistence:jakarta.persistence-api:3.1.0",
+        
+        # H2 Database
+        "com.h2database:h2:2.2.224",
+        
+        # Logging
+        "org.slf4j:slf4j-api:2.0.9",
+        
+        # Testing dependencies
+        "org.springframework.boot:spring-boot-starter-test:3.2.0",
+        "org.junit.jupiter:junit-jupiter-api:5.10.1",
+        "org.junit.jupiter:junit-jupiter-engine:5.10.1",
+        "org.mockito:mockito-core:5.7.0",
+        "org.assertj:assertj-core:3.24.2",
+    ],
+    repositories = [
+        "https://repo1.maven.org/maven2",
+        "https://repo.spring.io/release",
+    ],
+    fetch_sources = True,
+)

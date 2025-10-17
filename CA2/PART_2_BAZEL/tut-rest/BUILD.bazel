@@ -1,0 +1,33 @@
+# BUILD.bazel
+
+# Java library containing all application code
+java_library(
+    name = "payroll_lib",
+    srcs = glob(["src/main/java/**/*.java"]),
+    resources = glob(["src/main/resources/**/*"]),
+    deps = [
+        # Original dependencies
+        "@maven//:org_springframework_boot_spring_boot_starter_data_jpa",
+        "@maven//:org_springframework_boot_spring_boot_starter_web",
+        "@maven//:org_springframework_boot_spring_boot_starter",
+        "@maven//:org_springframework_hateoas_spring_hateoas",
+        "@maven//:com_h2database_h2",
+        
+        # Missing dependencies (Bazel told us to add these)
+        "@maven//:jakarta_persistence_jakarta_persistence_api",
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:org_springframework_boot_spring_boot",
+        "@maven//:org_springframework_boot_spring_boot_autoconfigure",
+        "@maven//:org_springframework_data_spring_data_jpa",
+        "@maven//:org_springframework_spring_context",
+        "@maven//:org_springframework_spring_web",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Spring Boot application
+java_binary(
+    name = "payroll_app",
+    main_class = "payroll.PayrollApplication",
+    runtime_deps = [":payroll_lib"],
+)
