@@ -2,6 +2,7 @@ plugins {
     id 'org.springframework.boot' version '3.3.0'
     id 'io.spring.dependency-management' version '1.1.5'
     id 'java'
+    id 'application'
 }
 
 group = 'com.example'
@@ -18,22 +19,115 @@ repositories {
 }
 
 dependencies {
-    // Spring Web (REST API)
     implementation 'org.springframework.boot:spring-boot-starter-web'
-
-    // Spring Data JPA for repository support
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-
-    // H2 in-memory database
-    runtimeOnly 'com.h2database:h2'
-
-    // Spring HATEOAS for hypermedia links
     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
-
-    // Spring Boot Test
+    runtimeOnly 'com.h2database:h2'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 test {
     useJUnitPlatform()
 }
+
+// Disable bootJar to avoid compatibility issues
+tasks.named('bootJar') {
+    enabled = false
+}
+
+// Enable regular jar task
+tasks.named('jar') {
+    enabled = true
+    archiveClassifier = '' // Remove the 'plain' classifier
+}
+
+tasks.named('bootDistZip') {
+    dependsOn 'jar'
+}
+
+tasks.named('bootDistTar') {
+    dependsOn 'jar'
+}
+
+tasks.named('bootStartScripts') {
+    dependsOn 'jar'
+}
+
+// --- deployToDev task ---
+tasks.register("deployToDev") {
+    group = "deployment"
+    description = "Deploys app to development directory"
+    
+    def deployDir = "$buildDir/deployment/dev"
+    
+    // Depend on jar instead of assemble to avoid bootJar
+    dependsOn 'jar'
+    
+    doLast {
+        logger.lifecycle("Starting deployment to: $deployDir")
+        
+        // 1. Clean deployment directory
+        delete deployDir
+        
+        // 2. Copy main application artifact
+        def jarFile = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar").get().asFile
+        if (jarFile.exists()) {
+            copy {
+                from jarFile
+                into deployDir
+                rename { "application.jar" }
+            }
+            println "Copied application JAR"
+        } else {
+            println "Application JAR not found: ${jarFile.path}"
+            // List what's actually in the libs directory for debugging
+            def libsDir = layout.buildDirectory.dir("libs").get().asFile
+            if (libsDir.exists()) {
+                println "Contents of libs directory:"
+                libsDir.eachFile { file ->
+                    println "   - ${file.name}"
+                }
+            }
+        }
+        
+        // 3. Copy runtime dependencies
+        def libDir = "$deployDir/lib"
+        mkdir libDir
+        copy {
+            from configurations.runtimeClasspath
+            into libDir
+            // Exclude the main application jar from dependencies
+            exclude { it.file.name.contains(project.name) }
+        }
+        println "Copied runtime dependencies"
+        
+        // 4. Copy and filter configuration files
+        def configFiles = fileTree('src/main/resources').include('*.properties')
+        if (!configFiles.empty) {
+            copy {
+                from 'src/main/resources'
+                into deployDir
+                include '*.properties'
+                expand([
+                    projectVersion: project.version,
+                    buildTimestamp: new Date().format("yyyy-MM-dd HH:mm:ss"),
+                    deploymentEnv: 'dev'
+                ])
+                filteringCharset = 'UTF-8'
+            }
+            println "Copied and filtered configuration files"
+        } else {
+            println "No properties files found to copy"
+        }
+        
+        logger.lifecycle("Deployment completed successfully to: $deployDir")
+        
+        // Show what was deployed
+        println "\n Deployment Summary:"
+        fileTree(deployDir).each { file ->
+            def relativePath = file.path - deployDir
+            println "    $relativePath"
+        }
+    }
+}
+
