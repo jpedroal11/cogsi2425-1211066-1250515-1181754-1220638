@@ -1,4 +1,4 @@
-﻿workspace(name = "bazel_basic_demo")
+workspace(name = "bazel_basic_demo")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
@@ -15,7 +15,13 @@ http_archive(
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 
 maven_install(
-    artifacts = [],
+    artifacts = [
+        "org.junit.jupiter:junit-jupiter-api:5.10.2",
+        "org.junit.jupiter:junit-jupiter-engine:5.10.2",
+        "org.junit.jupiter:junit-jupiter-params:5.10.2",
+        "org.apache.logging.log4j:log4j-api:2.20.0",
+        "org.apache.logging.log4j:log4j-core:2.20.0",
+    ],
     repositories = [
         "https://repo1.maven.org/maven2",
     ],

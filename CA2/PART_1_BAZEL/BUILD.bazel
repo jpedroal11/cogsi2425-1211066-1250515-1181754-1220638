@@ -1,9 +1,13 @@
-﻿# BUILD.bazel
+# BUILD.bazel
 
 # Compile the chat application library
 java_library(
     name = "chat_lib",
     srcs = glob(["src/main/java/**/*.java"]),
+    deps = [
+        "@maven//:org_apache_logging_log4j_log4j_api",
+        "@maven//:org_apache_logging_log4j_log4j_core",
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -17,6 +21,101 @@ java_binary(
 # Client binary
 java_binary(
     name = "chat_client",
-    main_class = "basic_demo.ChatClient",
+    main_class = "basic_demo.ChatClientApp",
     runtime_deps = [":chat_lib"],
+)
+
+# Custom server runner using PowerShell script
+genrule(
+    name = "run_server_ps1",
+    srcs = ["scripts/run_server.ps1"],
+    outs = ["run_server_wrapper.ps1"],
+    cmd_bat = """
+        copy $(location scripts/run_server.ps1) $@
+    """,
+    executable = True,
+    local = 1,
+)
+
+# Custom server runner using batch file
+genrule(
+    name = "run_server_bat",
+    srcs = ["scripts/run_server.bat"],
+    outs = ["run_server_wrapper.bat"],
+    cmd_bat = """
+        copy $(location scripts/run_server.bat) $@
+    """,
+    executable = True,
+    local = 1,
+)
+
+# Unit tests
+java_test(
+    name = "chat_client_test",
+    srcs = glob(["test/java/**/*.java"]),
+    test_class = "basic_demo.ChatClientTest",
+    deps = [
+        ":chat_lib",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+    ],
+    jvm_flags = ["-Djava.awt.headless=true"],
+)
+
+# Backup sources
+genrule(
+    name = "backup_sources",
+    srcs = glob(["src/**/*"]),
+    outs = ["backup_complete.txt"],
+    cmd_bat = """
+        @echo off
+        if not exist $(BINDIR)\\backup mkdir $(BINDIR)\\backup
+        xcopy /E /I /Y /Q src $(BINDIR)\\backup\\src > nul 2>&1
+        echo Backup completed at %date% %time% > $@
+    """,
+    local = 1,
+)
+
+# Create ZIP archive of backup
+genrule(
+    name = "backup_zip",
+    srcs = [":backup_sources"],
+    outs = ["application-backup.zip"],
+    cmd_bat = """
+        @echo off
+        set TIMESTAMP=%date:~-4,4%%date:~-10,2%%date:~-7,2%-%time:~0,2%%time:~3,2%%time:~6,2%
+        set TIMESTAMP=%TIMESTAMP: =0%
+        
+        if exist bazel-bin\\backup (
+            powershell -NoProfile -Command "Compress-Archive -Path 'bazel-bin\\backup\\*' -DestinationPath '$@' -Force"
+            if exist $@ (
+                echo Backup archive created successfully with timestamp: %TIMESTAMP%
+            )
+        ) else (
+            type nul > $@
+        )
+    """,
+    local = 1,
+)
+
+# Display Java toolchain information
+genrule(
+    name = "java_toolchain_info",
+    outs = ["toolchain_info.txt"],
+    cmd_bat = """
+        @echo off
+        echo === Java Toolchain Information === > $@
+        echo. >> $@
+        echo Java Home: %JAVA_HOME% >> $@
+        echo. >> $@
+        echo Java Version: >> $@
+        java -version 2>> $@ || echo Java not found in PATH >> $@
+        echo. >> $@
+        echo Bazel Version: >> $@
+        bazel version 2>> $@ || echo Bazel version unavailable >> $@
+        echo. >> $@
+        echo Windows Version: >> $@
+        ver >> $@
+    """,
+    local = 1,
 )
