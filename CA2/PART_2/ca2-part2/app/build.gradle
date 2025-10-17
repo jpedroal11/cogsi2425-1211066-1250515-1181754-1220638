@@ -131,3 +131,59 @@ tasks.register("deployToDev") {
     }
 }
 
+// --- runFromDist task ---
+application {
+    mainClass = 'payroll.PayrollApplication'
+}
+
+tasks.register("runFromDist") {
+    dependsOn 'installDist'
+    group = "application"
+    description = "Runs the app using generated distribution scripts"
+
+    doLast {
+        def isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+        def scriptDir = file("build/install/${project.name}/bin")
+        def scriptFile = isWindows ? 
+            file("$scriptDir/${project.name}.bat") : 
+            file("$scriptDir/${project.name}")
+        
+        if (!scriptFile.exists()) {
+            throw new RuntimeException("Distribution script not found at: $scriptFile")
+        }
+        
+        println "Starting application from distribution..."
+        println "Script: $scriptFile"
+        println "=" * 50
+        
+        def command = isWindows ? 
+            ["cmd", "/c", scriptFile.absolutePath] : 
+            [scriptFile.absolutePath]
+        
+        def processBuilder = new ProcessBuilder(command)
+        processBuilder.directory(scriptDir)
+        processBuilder.inheritIO()
+        
+        try {
+            // Start the process without waiting for it to complete
+            def process = processBuilder.start()
+            
+            println "Application started with PID: ${process.pid()}"
+            println "Access the application at: http://localhost:8080/employees"
+            println "Press Ctrl+C to stop the application"
+            
+            // Keep the process running until Gradle is terminated
+            Thread keepAlive = new Thread({
+                while (process.isAlive()) {
+                    Thread.sleep(1000)
+                }
+            })
+            keepAlive.start()
+            keepAlive.join()
+            
+        } catch (Exception e) {
+            println "Failed to start application: ${e.message}"
+            throw e
+        }
+    }
+}
