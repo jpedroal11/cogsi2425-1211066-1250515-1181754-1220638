@@ -1,0 +1,81 @@
+# BUILD.bazel
+
+# Compile the chat application library
+java_library(
+    name = "chat_lib",
+    srcs = glob(["src/main/java/**/*.java"]),
+    deps = [
+        "@maven//:org_apache_logging_log4j_log4j_api",
+        "@maven//:org_apache_logging_log4j_log4j_core",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Server binary
+java_binary(
+    name = "chat_server",
+    main_class = "basic_demo.ChatServerApp",
+    runtime_deps = [":chat_lib"],
+)
+
+# Client binary
+java_binary(
+    name = "chat_client",
+    main_class = "basic_demo.ChatClientApp",
+    runtime_deps = [":chat_lib"],
+)
+
+# Custom server runner using PowerShell script
+genrule(
+    name = "run_server_ps1",
+    srcs = ["scripts/run_server.ps1"],
+    outs = ["run_server_wrapper.ps1"],
+    cmd_bat = """
+        copy $(location scripts/run_server.ps1) $@
+    """,
+    executable = True,
+    local = 1,
+)
+
+# Custom server runner using batch file
+genrule(
+    name = "run_server_bat",
+    srcs = ["scripts/run_server.bat"],
+    outs = ["run_server_wrapper.bat"],
+    cmd_bat = """
+        copy $(location scripts/run_server.bat) $@
+    """,
+    executable = True,
+    local = 1,
+)
+
+# Unit tests
+java_test(
+    name = "chat_client_test",
+    srcs = ["src/test/java/basic_demo/ChatClientTest.java"],
+    test_class = "basic_demo.ChatClientTest",
+    deps = [
+        ":chat_lib",
+        "@maven//:org_junit_jupiter_junit_jupiter_api",
+        "@maven//:org_junit_jupiter_junit_jupiter_engine",
+    ],
+    jvm_flags = ["-Djava.awt.headless=true"],
+)
+
+# Backup sources
+genrule(
+    name = "backup_sources",
+    srcs = glob(["src/**/*"]),
+    outs = ["backup_complete.txt"],
+    cmd_bat = "xcopy /E /I /Y src backup\\src > nul 2>&1 & powershell -Command \"'Backup completed' | Out-File -FilePath $(OUTS) -Encoding ASCII\"",
+    local = 1,
+)
+
+# Create ZIP archive of backup
+genrule(
+    name = "backup_zip",
+    srcs = [":backup_sources"],
+    outs = ["application-backup.zip"],
+    cmd_bat = "if exist backup ( powershell -NoProfile -Command \"Compress-Archive -Path 'backup\\*' -DestinationPath $(OUTS) -Force\" ) else ( powershell -Command \"New-Item -ItemType File -Path $(OUTS) -Force | Out-Null\" )",
+    local = 1,
+)
