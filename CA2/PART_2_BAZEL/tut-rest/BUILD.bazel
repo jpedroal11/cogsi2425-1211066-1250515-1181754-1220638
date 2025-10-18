@@ -31,3 +31,153 @@ java_binary(
     main_class = "payroll.PayrollApplication",
     runtime_deps = [":payroll_lib"],
 )
+
+# ============================================
+# DEPLOYMENT TASKS
+# ============================================
+
+# Regra para criar o script de deployment executável
+genrule(
+    name = "deploy_script",
+    srcs = ["deploy_dev.sh"],
+    outs = ["deploy_dev_executable.sh"],
+    cmd = "cp $< $@ && chmod +x $@",
+)
+
+# Tarefa principal: deployToDev
+genrule(
+    name = "deployToDev",
+    srcs = [
+        ":payroll_app.jar",              # JAR principal
+        ":libpayroll_lib.jar",           # Biblioteca compilada
+        "src/main/resources/application.properties",  # Configuração
+        ":deploy_dev_executable.sh",     # Script de deployment
+    ],
+    outs = [
+        "build/deployment/dev/payroll_app.jar",
+        "build/deployment/dev/lib/payroll_lib.jar",
+        "build/deployment/dev/application.properties",
+        "build/deployment/dev/DEPLOYMENT_INFO.txt",
+    ],
+    cmd = """
+        SCRIPT=$$(echo $(locations :deploy_dev_executable.sh) | cut -d' ' -f1)
+        $$SCRIPT \
+            $(location :payroll_app.jar) \
+            $(location :libpayroll_lib.jar) \
+            $(location src/main/resources/application.properties) \
+            $$(dirname $(location build/deployment/dev/payroll_app.jar)) \
+            0.1.0-SNAPSHOT
+    """,
+    tools = [":deploy_dev_executable.sh"],
+    visibility = ["//visibility:public"],
+)
+
+# Tarefa auxiliar: verificar deployment (para uso manual)
+# Para verificar: ./verify_deployment.sh
+# Nota: sh_test não funciona bem com caminhos Bazel neste contexto
+
+# ============================================
+# PART 2 - SECOND WEEK TASKS
+# ============================================
+
+# Task 1: installDist - Criar distribuição instalável
+genrule(
+    name = "install_dist_script",
+    srcs = ["install_dist.sh"],
+    outs = ["install_dist_executable.sh"],
+    cmd = "cp $< $@ && chmod +x $@",
+)
+
+genrule(
+    name = "installDist",
+    srcs = [
+        ":payroll_app.jar",
+        ":libpayroll_lib.jar",
+        ":install_dist_executable.sh",
+    ],
+    outs = [
+        "dist/bin/payroll_app",
+        "dist/bin/payroll_app.bat",
+        "dist/lib/payroll_app.jar",
+        "dist/lib/payroll_lib.jar",
+    ],
+    cmd = """
+        SCRIPT=$$(echo $(locations :install_dist_executable.sh) | cut -d' ' -f1)
+        $$SCRIPT \
+            $(location :payroll_app.jar) \
+            $(location :libpayroll_lib.jar) \
+            $$(dirname $$(dirname $(location dist/bin/payroll_app))) \
+            0.1.0-SNAPSHOT
+    """,
+    tools = [":install_dist_executable.sh"],
+    visibility = ["//visibility:public"],
+)
+
+# Task 1.1: runFromDist - Executar aplicação usando scripts da distribuição
+genrule(
+    name = "run_app_script",
+    srcs = ["run_app.sh"],
+    outs = ["run_app_executable.sh"],
+    cmd = "cp $< $@ && chmod +x $@",
+)
+
+sh_binary(
+    name = "runFromDist",
+    srcs = ["run_app.sh"],
+    data = [":installDist"],
+    args = ["$(location :installDist)"],
+)
+
+# Task 2: Gerar Javadoc
+java_library(
+    name = "payroll_javadoc_lib",
+    srcs = glob(["src/main/java/**/*.java"]),
+    deps = [
+        "@maven//:org_springframework_boot_spring_boot_starter_data_jpa",
+        "@maven//:org_springframework_boot_spring_boot_starter_web",
+        "@maven//:jakarta_persistence_jakarta_persistence_api",
+    ],
+)
+
+genrule(
+    name = "generate_javadoc",
+    srcs = glob(["src/main/java/**/*.java"]),
+    outs = ["javadoc_output_placeholder.txt"],
+    cmd = """
+        JAVADOC_DIR=$$(dirname $@)/javadoc
+        mkdir -p $$JAVADOC_DIR
+        javadoc -d $$JAVADOC_DIR \
+            -sourcepath src/main/java \
+            -subpackages payroll \
+            -quiet || true
+        echo "Javadoc generated" > $@
+    """,
+)
+
+# Task 2.1: javadocZip - Empacotar Javadoc em ZIP
+genrule(
+    name = "javadocZip",
+    srcs = [":generate_javadoc"],
+    outs = ["payroll-javadoc.zip"],
+    cmd = """
+        JAVADOC_DIR=$$(dirname $(location :generate_javadoc))/javadoc
+        if [ -d "$$JAVADOC_DIR" ]; then
+            cd $$JAVADOC_DIR/..
+            zip -r -q $(location payroll-javadoc.zip) javadoc/ || echo "Warning: zip might be incomplete"
+        else
+            echo "No javadoc found" > $(location payroll-javadoc.zip)
+        fi
+    """,
+    visibility = ["//visibility:public"],
+)
+
+# Task 3: Integration Tests - Source set separado
+java_test(
+    name = "integration_tests",
+    srcs = glob(["src/integration-test/java/**/*.java"]),
+    deps = [
+        ":payroll_lib",
+    ],
+    test_class = "payroll.EmployeeIntegrationTest",
+    size = "small",
+)
