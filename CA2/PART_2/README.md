@@ -81,9 +81,56 @@ test {
 
 ## Create a custom task named **deployToDev**
 
+1. Create a directory called gradle and inside it create a file named deploy.gradle with the following content:
+
+```gradle
+
+def deployDir = "$buildDir/deployment/dev"
+def libDir = "$deployDir/lib"
+def jarFile = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar")
+
+tasks.register("cleanDevDeployment", Delete) {
+    delete deployDir
+}
+
+tasks.register("copyAppJar", Copy) {
+    dependsOn "jar"
+    from jarFile
+    into deployDir
+    rename { "application.jar" }
+}
+
+tasks.register("copyRuntimeDeps", Copy) {
+    dependsOn "jar"
+    from configurations.runtimeClasspath
+    into libDir
+    exclude { it.file.name.contains(project.name) }
+}
+
+tasks.register("copyConfigFiles", Copy) {
+    from("src/main/resources") {
+        include "*.properties"
+        expand([
+                projectVersion: project.version,
+                buildTimestamp: new Date().format("yyyy-MM-dd HH:mm:ss"),
+                deploymentEnv: "dev"
+        ])
+    }
+    into deployDir
+}
+
+tasks.register("deployToDev") {
+    dependsOn "cleanDevDeployment", "copyAppJar", "copyRuntimeDeps", "copyConfigFiles"
+    doLast {
+        println "✅ Deployment completed to: $deployDir"
+    }
+}
+```
+
+
 The deployToDev task successfully automates the deployment process by executing four sequential steps:
 
-### Step 1: Clean Deployment Directory
+#### Step 1: Clean Deployment Directory
 
 - Action: Deletes the existing build/deployment/dev directory
 
@@ -91,7 +138,13 @@ The deployToDev task successfully automates the deployment process by executing 
 
 - Gradle Task Type: Built-in Delete functionality
 
-### Step 2: Copy Main Application Artifact
+```gradle
+tasks.register("cleanDevDeployment", Delete) {
+delete deployDir
+}
+```
+
+#### Step 2: Copy Main Application Artifact
 
 - Action: Copies the built JAR file to deployment directory
 
@@ -99,7 +152,18 @@ The deployToDev task successfully automates the deployment process by executing 
 
 - Note: File is renamed from app-0.0.1-SNAPSHOT.jar to application.jar for standardization
 
-### Step 3: Copy Runtime Dependencies
+```gradle
+tasks.register("copyAppJar", Copy) {
+    dependsOn "jar"
+    from jarFile
+    into deployDir
+    rename { "application.jar" }
+}
+
+```
+
+
+#### Step 3: Copy Runtime Dependencies
 
 - Action: Copies all runtime dependencies to lib/ subdirectory
 
@@ -109,12 +173,58 @@ The deployToDev task successfully automates the deployment process by executing 
 
 - Exclusion: Filters out the main application JAR to avoid duplication
 
-### Step 4: Copy Configuration Files
+```gradle
+tasks.register("copyRuntimeDeps", Copy) {
+    dependsOn "jar"
+    from configurations.runtimeClasspath
+    into libDir
+    exclude { it.file.name.contains(project.name) }
+}
+```
+
+#### Step 4: Copy Configuration Files
 
 - Result: "No properties files found to copy" - This is expected since the application uses Spring Boot's auto-configuration and doesn't have custom .properties files
 
+```gradle
+tasks.register("copyConfigFiles", Copy) {
+    from("src/main/resources") {
+        include "*.properties"
+        expand([
+                projectVersion: project.version,
+                buildTimestamp: new Date().format("yyyy-MM-dd HH:mm:ss"),
+                deploymentEnv: "dev"
+        ])
+    }
+    into deployDir
+}
+```
 
-### Output
+#### Step 5: Final Deployment Task
+- Action: Defines the main deployToDev task that depends on all previous steps
+- Completion Message: Prints a success message with deployment path
+
+```gradle
+tasks.register("deployToDev") {
+    dependsOn "cleanDevDeployment", "copyAppJar", "copyRuntimeDeps", "copyConfigFiles"
+    doLast {
+        println "✅ Deployment completed to: $deployDir"
+    }
+}
+```
+
+#### Step 6: Add the following line to the build.gradle file to apply the deploy.gradle script:
+
+```gradle
+apply from: 'gradle/deploy.gradle'
+```
+
+#### Step 7: Run the deployToDev task from the terminal:
+
+```bash
+./gradlew deployToDev
+```
+#### Output
 
     ```pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)> ./gradlew deployToDev
 
@@ -211,9 +321,64 @@ The deployToDev task successfully automates the deployment process by executing 
     pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)> ```
 
 
-## Create a custom task that depends on the installDist task, running the application using the generated distribution scripts
+2. Create a custom task that depends on the javadoc task
+
 
 The task successfully starts the Spring Boot application using the generated distribution scripts, demonstrating a production-like deployment approach. 
+#### Step 1: Create a seperated file named run-dist.gradle inside the gradle directory with the following content:
+
+```gradle
+tasks.register("runFromDist") {
+    dependsOn 'installDist'
+    group = "application"
+    description = "Runs the app using generated distribution scripts"
+
+    doLast {
+        def isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+        def scriptDir = file("build/install/${project.name}/bin")
+        def scriptFile = isWindows ?
+                file("$scriptDir/${project.name}.bat") :
+                file("$scriptDir/${project.name}")
+
+        if (!scriptFile.exists()) {
+            throw new RuntimeException("Distribution script not found at: $scriptFile")
+        }
+
+        println "Starting application from distribution..."
+        println "Script: $scriptFile"
+        println "=" * 50
+
+        def command = isWindows ?
+                ["cmd", "/c", scriptFile.absolutePath] :
+                [scriptFile.absolutePath]
+
+        def processBuilder = new ProcessBuilder(command)
+        processBuilder.directory(scriptDir)
+        processBuilder.inheritIO()
+
+        def process = processBuilder.start()
+        println "Application started with PID: ${process.pid()}"
+        println "Access the app at http://localhost:8080/employees"
+
+        // Keep it running until the process is terminated
+        Thread.start {
+            while (process.isAlive()) {
+                Thread.sleep(1000)
+            }
+        }.join()
+    }
+}
+```
+
+#### Step 2: Add the following line to the build.gradle file to apply the run-dist.gradle script:
+
+```gradle
+apply from: 'gradle/run-dist.gradle'
+```
+
+```bash
+./gradlew runFromDist
+```
 
 On the left terminal the **runFromDist** task is run and then to verify its actually running properly, I request to the API via curl is done.
 
@@ -221,7 +386,35 @@ On the left terminal the **runFromDist** task is run and then to verify its actu
 *Left: Task execution showing successful startup with PID 63680*  
 *Right: API verification returning employee data*
 
-## Create a custom task that depends on the javadoc task
+3. Create a custom task that depends on the javadoc task
+
+#### Step 1: Create a seperated file named docs.gradle inside the gradle directory with the following content:
+
+```gradle
+tasks.register("packageJavadoc", Zip) {
+    group = "documentation"
+    description = "Generates and packages project Javadoc into a zip file."
+    dependsOn "javadoc"
+    from javadoc.destinationDir
+    destinationDirectory = layout.buildDirectory.dir("docs")
+    archiveFileName = "${project.name}-${project.version}-javadoc.zip"
+    doLast {
+        println "Javadoc packaged successfully at: ${destinationDirectory.get().asFile.absolutePath}"
+    }
+}
+```
+
+#### Step 2: Add the following line to the build.gradle file to apply the docs.gradle script and run it:
+
+```gradle
+apply from: 'gradle/docs.gradle'
+```
+
+
+```bash
+./gradlew packageJavadoc
+```
+
 
 A custom Gradle task was created to automate the generation and packaging of project documentation. The task seamlessly integrates Javadoc generation with archival packaging, producing a distributable documentation ZIP file.
 
@@ -249,7 +442,56 @@ In order to check that it actually ran successfully:
     -rw-r--r--  1 pedroleal  staff  79368 Oct 17 19:13 app/build/docs/app-0.0.1-SNAPSHOT-javadoc.zip
     pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)> 
 
-## Create a new source set for integration tests
+
+4. Create a new source set for integration tests
+
+#### Step 1: Add the folwing file  integration-tests.gradle inside the gradle directory with the following content:
+
+
+```gradle
+sourceSets {
+    integrationTest {
+        java.srcDir "src/integrationTest/java"
+        resources.srcDir "src/integrationTest/resources"
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+dependencies {
+    integrationTestImplementation 'org.junit.platform:junit-platform-launcher'
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter-engine'
+    integrationTestImplementation 'org.junit.jupiter:junit-jupiter-api'
+}
+
+tasks.register("integrationTest", Test) {
+    description = "Runs integration tests."
+    group = "verification"
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    shouldRunAfter test
+    useJUnitPlatform()
+    testLogging { events "passed", "failed" }
+}
+
+check.dependsOn integrationTest
+
+```
+
+#### Step 2: Add the following line to the build.gradle file to apply the integration-tests.gradle script and run it:
+
+```gradle
+apply from: 'gradle/integration-tests.gradle'
+```
+
+```bash
+./gradlew integrationTest
+```
 
 A dedicated source set for integration tests was created to separate unit tests from broader integration tests. This configuration allows for comprehensive testing of Spring Boot components working together while maintaining clean test organization.
 
@@ -307,3 +549,58 @@ A dedicated source set for integration tests was created to separate unit tests 
     3 actionable tasks: 1 executed, 2 up-to-date
     pedroleal@Pedros-MBP ~/D/I/1/C/s/c/C/P/ca2-part2 (ca2-part2)>
 *Note: Note: The complete output includes detailed Spring Boot startup logs showing full application context initialization, JPA repository configuration, H2 database setup, and sample data loading. These details have been omitted for brevity.*
+
+5. Update the Gradle build script to include code quality checks using Checkstyle
+
+```gradle
+plugins {
+    id 'org.springframework.boot' version '3.3.0'
+    id 'io.spring.dependency-management' version '1.1.5'
+    id 'java'
+    id 'application'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+
+    runtimeOnly 'com.h2database:h2'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+application {
+    mainClass = 'payroll.PayrollApplication'
+}
+
+apply from: "gradle/deployment.gradle"
+apply from: "gradle/run-dist.gradle"
+apply from: "gradle/docs.gradle"
+apply from: "gradle/integration-test.gradle"
+// Default test configuration
+test {
+    useJUnitPlatform()
+}
+
+```
+
+6. Tag the final commit with CA2_PART2_COMPLETED
+
+```bash
+git tag ca2-part2
+git push origin ca2-part2
+```
