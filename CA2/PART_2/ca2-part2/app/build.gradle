@@ -33,9 +33,9 @@ application {
 }
 
 apply from: "gradle/deployment.gradle"
-apply from: "gradle/integration-test.gradle"
-apply from: "gradle/docs.gradle"
 apply from: "gradle/run-dist.gradle"
+apply from: "gradle/docs.gradle"
+apply from: "gradle/integration-test.gradle"
 // Default test configuration
 test {
     useJUnitPlatform()

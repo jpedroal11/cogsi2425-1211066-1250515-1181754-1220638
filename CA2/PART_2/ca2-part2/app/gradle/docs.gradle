@@ -6,6 +6,6 @@ tasks.register("packageJavadoc", Zip) {
     destinationDirectory = layout.buildDirectory.dir("docs")
     archiveFileName = "${project.name}-${project.version}-javadoc.zip"
     doLast {
-        println "📦 Javadoc packaged successfully at: ${destinationDirectory.get().asFile.absolutePath}"
+        println "Javadoc packaged successfully at: ${destinationDirectory.get().asFile.absolutePath}"
     }
 }
