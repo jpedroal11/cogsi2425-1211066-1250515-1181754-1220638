@@ -54,82 +54,77 @@ tasks.named('bootStartScripts') {
 }
 
 // --- deployToDev task ---
+def deployDir = "$buildDir/deployment/dev"
+def libDir = "$deployDir/lib"
+def jarFile = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar")
+
+// 1Clean deployment directory
+tasks.register("cleanDevDeployment", Delete) {
+    group = "deployment"
+    description = "Deletes previous development deployment directory"
+    delete deployDir
+}
+
+// Copy main application JAR
+tasks.register("copyAppJar", Copy) {
+    group = "deployment"
+    description = "Copies application JAR into the deployment directory"
+    dependsOn "jar"
+
+    from jarFile
+    into deployDir
+    rename { "application.jar" }
+}
+
+// Copy runtime dependencies
+tasks.register("copyRuntimeDeps", Copy) {
+    group = "deployment"
+    description = "Copies runtime dependencies to the deployment lib directory"
+    dependsOn "jar"
+
+    from configurations.runtimeClasspath
+    into libDir
+    exclude { it.file.name.contains(project.name) } // avoid copying the main jar
+}
+
+//Copy configuration files (with property substitution)
+tasks.register("copyConfigFiles", Copy) {
+    group = "deployment"
+    description = "Copies configuration files with build metadata filtering"
+
+    from("src/main/resources") {
+        include "*.properties"
+        expand([
+                projectVersion: project.version,
+                buildTimestamp: new Date().format("yyyy-MM-dd HH:mm:ss"),
+                deploymentEnv: "dev"
+        ])
+        filteringCharset = "UTF-8"
+    }
+    into deployDir
+}
+
+// Aggregate task – orchestrates everything above
 tasks.register("deployToDev") {
     group = "deployment"
-    description = "Deploys app to development directory"
-    
-    def deployDir = "$buildDir/deployment/dev"
-    
-    // Depend on jar instead of assemble to avoid bootJar
-    dependsOn 'jar'
-    
+    description = "Deploys the app to the development directory"
+
+    dependsOn(
+            "cleanDevDeployment",
+            "copyAppJar",
+            "copyRuntimeDeps",
+            "copyConfigFiles"
+    )
+
     doLast {
-        logger.lifecycle("Starting deployment to: $deployDir")
-        
-        // 1. Clean deployment directory
-        delete deployDir
-        
-        // 2. Copy main application artifact
-        def jarFile = layout.buildDirectory.file("libs/${project.name}-${project.version}.jar").get().asFile
-        if (jarFile.exists()) {
-            copy {
-                from jarFile
-                into deployDir
-                rename { "application.jar" }
-            }
-            println "Copied application JAR"
-        } else {
-            println "Application JAR not found: ${jarFile.path}"
-            // List what's actually in the libs directory for debugging
-            def libsDir = layout.buildDirectory.dir("libs").get().asFile
-            if (libsDir.exists()) {
-                println "Contents of libs directory:"
-                libsDir.eachFile { file ->
-                    println "   - ${file.name}"
-                }
-            }
-        }
-        
-        // 3. Copy runtime dependencies
-        def libDir = "$deployDir/lib"
-        mkdir libDir
-        copy {
-            from configurations.runtimeClasspath
-            into libDir
-            // Exclude the main application jar from dependencies
-            exclude { it.file.name.contains(project.name) }
-        }
-        println "Copied runtime dependencies"
-        
-        // 4. Copy and filter configuration files
-        def configFiles = fileTree('src/main/resources').include('*.properties')
-        if (!configFiles.empty) {
-            copy {
-                from 'src/main/resources'
-                into deployDir
-                include '*.properties'
-                expand([
-                    projectVersion: project.version,
-                    buildTimestamp: new Date().format("yyyy-MM-dd HH:mm:ss"),
-                    deploymentEnv: 'dev'
-                ])
-                filteringCharset = 'UTF-8'
-            }
-            println "Copied and filtered configuration files"
-        } else {
-            println "No properties files found to copy"
-        }
-        
-        logger.lifecycle("Deployment completed successfully to: $deployDir")
-        
-        // Show what was deployed
-        println "\n Deployment Summary:"
-        fileTree(deployDir).each { file ->
-            def relativePath = file.path - deployDir
-            println "    $relativePath"
+        println "✅ Deployment completed successfully to: $deployDir"
+        println "\nDeployment summary:"
+        fileTree(deployDir).forEach { file ->
+            println " - " + file.path - deployDir
         }
     }
 }
+
 
 // --- runFromDist task ---
 application {
