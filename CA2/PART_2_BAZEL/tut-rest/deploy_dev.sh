@@ -1,52 +1,39 @@
 #!/bin/bash
-# Script de deployment para DEV
 
-set -e  # Para em caso de erro
+set -e
 
-# Argumentos do Bazel
 APP_JAR=$1
 LIB_JAR=$2
 CONFIG_FILE=$3
 OUTPUT_DIR=$4
 VERSION=$5
 
-echo "🚀 Iniciando deployment para DEV..."
+echo "Starting deployment to DEV..."
 
-# 1. Criar estrutura de diretórios
+# Create directory structure
 mkdir -p "$OUTPUT_DIR/lib"
-echo "✅ Diretório criado: $OUTPUT_DIR"
 
-# 2. Copiar JAR principal
+# Copy main JAR
 cp "$APP_JAR" "$OUTPUT_DIR/payroll_app.jar"
-echo "✅ Copiado: payroll_app.jar"
 
-# 3. Copiar biblioteca compilada
+# Copy library JAR
 cp "$LIB_JAR" "$OUTPUT_DIR/lib/payroll_lib.jar"
-echo "✅ Copiado: lib/payroll_lib.jar"
 
-# 4. Processar ficheiro de configuração (substituir tokens)
+# Process configuration file (token replacement)
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 sed -e "s/@project.version@/$VERSION/g" \
     -e "s/@build.timestamp@/$TIMESTAMP/g" \
     "$CONFIG_FILE" > "$OUTPUT_DIR/application.properties"
-echo "✅ Processado: application.properties"
-echo "   - Version: $VERSION"
-echo "   - Timestamp: $TIMESTAMP"
 
-# 5. Criar ficheiro de manifesto
+# Create deployment info file
 cat > "$OUTPUT_DIR/DEPLOYMENT_INFO.txt" << EOF
-===========================================
-   DEPLOYMENT INFORMATION
-===========================================
+Deployment Information
+----------------------
 Application: Payroll Application
 Version: $VERSION
 Build Date: $TIMESTAMP
-Environment: Development (DEV)
-===========================================
+Environment: DEV
 EOF
-echo "✅ Criado: DEPLOYMENT_INFO.txt"
 
-echo ""
-echo "🎉 Deployment concluído com sucesso!"
-echo "📂 Localização: $OUTPUT_DIR"
+echo "Deployment completed: $OUTPUT_DIR"
 

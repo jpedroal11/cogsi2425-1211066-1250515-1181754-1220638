@@ -91,21 +91,18 @@ genrule(
 genrule(
     name = "installDist",
     srcs = [
-        ":payroll_app.jar",
-        ":libpayroll_lib.jar",
+        ":payroll_app_deploy.jar",
         ":install_dist_executable.sh",
     ],
     outs = [
         "dist/bin/payroll_app",
         "dist/bin/payroll_app.bat",
         "dist/lib/payroll_app.jar",
-        "dist/lib/payroll_lib.jar",
     ],
     cmd = """
         SCRIPT=$$(echo $(locations :install_dist_executable.sh) | cut -d' ' -f1)
         $$SCRIPT \
-            $(location :payroll_app.jar) \
-            $(location :libpayroll_lib.jar) \
+            $(location :payroll_app_deploy.jar) \
             $$(dirname $$(dirname $(location dist/bin/payroll_app))) \
             0.1.0-SNAPSHOT
     """,
@@ -125,7 +122,6 @@ sh_binary(
     name = "runFromDist",
     srcs = ["run_app.sh"],
     data = [":installDist"],
-    args = ["$(location :installDist)"],
 )
 
 # Task 2: Gerar Javadoc
