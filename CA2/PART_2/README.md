@@ -598,7 +598,7 @@ test {
 
 ```
 
-6. Tag the final commit with CA2_PART2_COMPLETED
+6. Tag the final commit with ca2-part2
 
 ```bash
 git tag ca2-part2
