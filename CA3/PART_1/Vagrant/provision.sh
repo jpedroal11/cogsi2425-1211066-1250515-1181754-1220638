@@ -1,7 +1,11 @@
-#!/bin/bash
-# provision.sh
+#!/usr/bin/env bash
+set -e
 
-echo "Starting main provisioning..."
+echo "Installing dependencies..."
+/vagrant/scripts/git-clone.sh
 
-# Call the install script inside scripts/
-bash /vagrant/scripts/install-dependecies.sh
+echo "Building app..."
+/vagrant/scripts/build-app.sh
+
+echo "Starting services..."
+/vagrant/scripts/start-services.sh

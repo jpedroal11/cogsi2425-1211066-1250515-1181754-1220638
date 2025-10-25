@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+PROJ_DIR="/home/vagrant/cogsi2425-1211066-1250515-1181754-1220638/CA3/PART_1/ca2-part2/app"
+
 set -e
 
 echo "==== Updating system packages ===="
@@ -22,10 +25,11 @@ source /etc/profile.d/maven.sh
 mvn -v
 
 echo "==== Installing Gradle 8.3 ===="
-GRADLE_VERSION=8.3
-wget -q https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip -P /tmp
-sudo unzip -d /opt/gradle /tmp/gradle-$GRADLE_VERSION-bin.zip
-sudo ln -sf /opt/gradle/gradle-$GRADLE_VERSION /opt/gradle/latest
+wget -q https://services.gradle.org/distributions/gradle-8.3-bin.zip -O /tmp/gradle-8.3-bin.zip
+sudo mkdir -p /opt/gradle
+sudo unzip -o /tmp/gradle-8.3-bin.zip -d /opt/gradle   # <- -o flag forces overwrite
+sudo ln -sf /opt/gradle/gradle-8.3/bin/gradle /usr/bin/gradle
+
 # Add Gradle to PATH
 echo 'export PATH=$PATH:/opt/gradle/latest/bin' | sudo tee /etc/profile.d/gradle.sh
 sudo chmod +x /etc/profile.d/gradle.sh
@@ -34,8 +38,7 @@ gradle -v
 
 echo "==== Updating Gradle wrapper in project to 8.3 ===="
 # Navigate to your project directory (update path if needed)
-PROJECT_DIR="$HOME/cogsi2425-1211066-1250515-1181754-1220638/CA2/PART_2/ca2-part2"
-cd "$PROJECT_DIR"
+cd "$PROJ_DIR"
 
 # Update gradle-wrapper.properties to use Gradle 8.3
 sed -i 's/gradle-9\.[0-9]\+/-8.3/' gradle/wrapper/gradle-wrapper.properties
