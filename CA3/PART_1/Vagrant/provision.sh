@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -e
-
-echo "Installing dependencies..."
+echo "Dependecies"
+/vagrant/scripts/install-dependecies.sh
+echo "Cloning"
 /vagrant/scripts/git-clone.sh
 
 echo "Building app..."
