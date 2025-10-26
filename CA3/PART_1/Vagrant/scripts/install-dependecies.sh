@@ -41,21 +41,4 @@ sudo chmod +x /etc/profile.d/gradle.sh
 export PATH=$PATH:/opt/gradle/latest/bin
 gradle -v
 
-# --- Ensure project exists ---
-if [ ! -d "$PROJ_DIR" ]; then
-  echo "❌ Project directory not found: $PROJ_DIR"
-  exit 1
-fi
-cd "$PROJ_DIR"
 
-# --- Generate or update Gradle wrapper ---
-echo "=== Generating/updating Gradle wrapper to $GRADLE_VERSION ==="
-gradle wrapper --gradle-version $GRADLE_VERSION
-chmod +x ./gradlew
-
-# --- Build project ---
-echo "=== Building project ==="
-./gradlew clean build
-./gradlew bootJar
-
-echo "=== Provisioning and build complete! ==="

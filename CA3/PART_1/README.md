@@ -134,4 +134,190 @@ And test if it can reach the app on Vagrant:
 ![img.png](img/vagrant_curl.png)
 
 
+2. Automize build,clone and launch app
 
+For this it was created different scripts for it to work:
+
+- install-dependecies.sh :
+
+```gradle
+#!/usr/bin/env bash
+set -e
+
+# --- Configuration ---
+PROJ_DIR="/home/vagrant/cogsi2425-1211066-1250515-1181754-1220638/CA3/PART_1/ca2-part2"
+JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+MAVEN_VERSION=3.9.3
+GRADLE_VERSION=8.3
+
+echo "=== Updating system packages ==="
+sudo apt-get update -y
+sudo apt-get install -y curl zip unzip git wget tar openjdk-17-jdk
+
+# --- Set Java environment ---
+echo "=== Setting up Java environment ==="
+echo "export JAVA_HOME=$JAVA_HOME" | sudo tee /etc/profile.d/java.sh
+echo 'export PATH=$JAVA_HOME/bin:$PATH' | sudo tee -a /etc/profile.d/java.sh
+sudo chmod +x /etc/profile.d/java.sh
+export JAVA_HOME=$JAVA_HOME
+export PATH=$JAVA_HOME/bin:$PATH
+java -version
+
+# --- Install Maven ---
+echo "=== Installing Maven $MAVEN_VERSION ==="
+wget -q https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz -P /tmp
+sudo tar xf /tmp/apache-maven-$MAVEN_VERSION-bin.tar.gz -C /opt
+sudo ln -sf /opt/apache-maven-$MAVEN_VERSION /opt/maven
+echo 'export PATH=$PATH:/opt/maven/bin' | sudo tee /etc/profile.d/maven.sh
+sudo chmod +x /etc/profile.d/maven.sh
+export PATH=$PATH:/opt/maven/bin
+mvn -v
+
+# --- Install Gradle ---
+echo "=== Installing Gradle $GRADLE_VERSION ==="
+wget -q https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip -O /tmp/gradle-$GRADLE_VERSION-bin.zip
+sudo mkdir -p /opt/gradle
+sudo unzip -o /tmp/gradle-$GRADLE_VERSION-bin.zip -d /opt/gradle
+sudo ln -sf /opt/gradle/gradle-$GRADLE_VERSION /opt/gradle/latest
+echo 'export PATH=$PATH:/opt/gradle/latest/bin' | sudo tee /etc/profile.d/gradle.sh
+sudo chmod +x /etc/profile.d/gradle.sh
+export PATH=$PATH:/opt/gradle/latest/bin
+gradle -v
+
+
+
+```
+This is to build the required dependencies such as Maven, Gradle and Java
+
+
+- git-clone.sh:
+
+
+
+```gradle
+#!/usr/bin/env bash
+set -e
+
+# Default target directory
+PROJ_DIR="${PROJ_DIR:-/home/vagrant}"
+REPO_NAME="cogsi2425-1211066-1250515-1181754-1220638"
+REPO_URL="git@github.com:jpedroal11/${REPO_NAME}.git"
+BRANCH_NAME="feature/vagrant-prt1"
+
+echo "==== Cloning project repository ===="
+
+# Ensure known_hosts contains GitHub’s fingerprint to avoid prompt
+mkdir -p ~/.ssh
+ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+if [ -d "$PROJ_DIR/$REPO_NAME/.git" ]; then
+    echo "Repository already exists — fetching latest changes..."
+    cd "$PROJ_DIR/$REPO_NAME"
+    git fetch origin
+else
+    echo "Cloning new repository into $PROJ_DIR"
+    mkdir -p "$PROJ_DIR"
+    git clone "$REPO_URL" "$PROJ_DIR/$REPO_NAME"
+    cd "$PROJ_DIR/$REPO_NAME"
+fi
+
+# Checkout the desired branch safely
+if git show-ref --verify --quiet "refs/heads/$BRANCH_NAME"; then
+    git checkout "$BRANCH_NAME"
+    git pull origin "$BRANCH_NAME"
+else
+    git checkout -b "$BRANCH_NAME" "origin/$BRANCH_NAME"
+fi
+
+cd "$PROJ_DIR/$REPO_NAME"
+echo "Repository cloned or updated successfully on branch '$BRANCH_NAME'."
+
+```
+
+
+Gets Github repo if it doesn'exist if it does it pull the latest update:
+
+
+- build-app.sh:
+
+```gradle
+#!/usr/bin/env bash
+set -e
+GRADLE_VERSION=8.3
+# Project directory
+PROJ_DIR="/home/vagrant/cogsi2425-1211066-1250515-1181754-1220638/CA3/PART_1/ca2-part2/app"
+JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+PROJ_ROOT="/home/vagrant/cogsi2425-1211066-1250515-1181754-1220638/CA3/PART_1/ca2-part2"
+
+echo "=== Building applications ==="
+
+cd "$PROJ_DIR" || { echo "Project app directory $PROJ_DIR does not exist"; exit 1; }
+
+cd "$PROJ_ROOT"
+echo "=== Generating/updating Gradle wrapper to $GRADLE_VERSION ==="
+gradle wrapper --gradle-version $GRADLE_VERSION
+chmod +x ./gradlew
+
+# Ensure Gradle wrapper is executable
+if [ -f "./gradlew" ]; then
+chmod +x ./gradlew
+# Force Gradle wrapper to use correct Java
+export JAVA_HOME=$JAVA_HOME
+export PATH=$JAVA_HOME/bin:$PATH
+echo "Using JAVA_HOME=$JAVA_HOME"
+./gradlew clean build
+
+else
+echo "Gradle wrapper not found, using system Gradle"
+export JAVA_HOME=$JAVA_HOME
+export PATH=$JAVA_HOME/bin:$PATH
+gradle clean build
+fi
+
+echo "=== Build complete ==="
+
+```
+
+
+To build the application
+
+
+- start-services.sh :
+
+```gradle
+
+#!/usr/bin/env bash
+set -e
+
+PROJ_ROOT="/home/vagrant/cogsi2425-1211066-1250515-1181754-1220638/CA3/PART_1/ca2-part2"
+cd "$PROJ_ROOT"
+./gradlew runFromDist
+
+
+```
+
+To start the application 
+
+
+3.Addd the references in the main provision.sh:
+```gradle
+#!/usr/bin/env bash
+set -e
+
+echo "==== Installing dependencies ===="
+/vagrant/scripts/install-dependecies.sh
+
+echo "==== Cloning repository ===="
+/vagrant/scripts/git-clone.sh
+
+echo "==== Configuring persistent H2 storage ===="
+/vagrant/scripts/setup-h2-persistence.sh
+
+echo "==== Building app ===="
+/vagrant/scripts/build-app.sh
+
+echo "==== Start ===="
+/vagrant/scripts/start-services.sh
+```
+
+Add the script automatically creates the dependencies needed, updates repo or creates it , builds the app and finally it deploys it.

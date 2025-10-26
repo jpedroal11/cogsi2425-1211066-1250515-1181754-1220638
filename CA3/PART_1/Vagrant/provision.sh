@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -e
-echo "Dependecies"
+
+echo "==== Installing dependencies ===="
 /vagrant/scripts/install-dependecies.sh
-echo "Cloning"
+
+echo "==== Cloning repository ===="
 /vagrant/scripts/git-clone.sh
 
-echo "Building app..."
+echo "==== Configuring persistent H2 storage ===="
+/vagrant/scripts/setup-h2-persistence.sh
+
+echo "==== Building app ===="
 /vagrant/scripts/build-app.sh
 
-echo "Starting services..."
+echo "==== Start ===="
 /vagrant/scripts/start-services.sh
