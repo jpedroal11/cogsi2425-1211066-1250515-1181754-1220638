@@ -28,4 +28,10 @@ tasks.register("integrationTest", Test) {
     testLogging { events "passed", "failed" }
 }
 
+tasks.named('processIntegrationTestResources') {
+    // Ignore duplicate resource files
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+
 check.dependsOn integrationTest
