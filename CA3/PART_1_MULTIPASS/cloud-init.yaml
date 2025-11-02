@@ -1,0 +1,76 @@
+#cloud-config
+
+# CA3 Part 1 - Multipass Alternative
+# Simplified version with external scripts folder
+
+# Update and upgrade packages
+package_update: true
+package_upgrade: true
+
+# Install required packages
+packages:
+  - git
+  - openjdk-17-jdk
+  - wget
+  - unzip
+  - curl
+  - tar
+  - zip
+
+# Create directories and setup environment
+runcmd:
+  # Install Maven 3.9.3
+  - echo "=== Installing Maven 3.9.3 ==="
+  - wget -q https://archive.apache.org/dist/maven/maven-3/3.9.3/binaries/apache-maven-3.9.3-bin.tar.gz -P /tmp
+  - tar xf /tmp/apache-maven-3.9.3-bin.tar.gz -C /opt
+  - ln -sf /opt/apache-maven-3.9.3 /opt/maven
+  - echo 'export PATH=$PATH:/opt/maven/bin' > /etc/profile.d/maven.sh
+  - chmod +x /etc/profile.d/maven.sh
+  - rm /tmp/apache-maven-3.9.3-bin.tar.gz
+  
+  # Install Gradle 8.3
+  - echo "=== Installing Gradle 8.3 ==="
+  - wget -q https://services.gradle.org/distributions/gradle-8.3-bin.zip -O /tmp/gradle-8.3-bin.zip
+  - mkdir -p /opt/gradle
+  - unzip -q /tmp/gradle-8.3-bin.zip -d /opt/gradle
+  - ln -sf /opt/gradle/gradle-8.3 /opt/gradle/latest
+  - echo 'export PATH=$PATH:/opt/gradle/latest/bin' > /etc/profile.d/gradle.sh
+  - chmod +x /etc/profile.d/gradle.sh
+  - rm /tmp/gradle-8.3-bin.zip
+  
+  # Set JAVA_HOME
+  - echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' > /etc/profile.d/java.sh
+  - echo 'export PATH=$JAVA_HOME/bin:$PATH' >> /etc/profile.d/java.sh
+  - chmod +x /etc/profile.d/java.sh
+  
+  # Create workspace directory
+  - mkdir -p /home/ubuntu/workspace
+  - chown -R ubuntu:ubuntu /home/ubuntu/workspace
+  
+  # Create directory for H2 database persistence
+  - mkdir -p /home/ubuntu/h2-data
+  - chown -R ubuntu:ubuntu /home/ubuntu/h2-data
+  - chmod 777 /home/ubuntu/h2-data
+  
+  # Setup SSH for GitHub
+  - mkdir -p /home/ubuntu/.ssh
+  - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
+  - chmod 700 /home/ubuntu/.ssh
+  
+  # Create scripts directory (will be populated by user)
+  - mkdir -p /home/ubuntu/scripts
+  - chown -R ubuntu:ubuntu /home/ubuntu/scripts
+
+final_message: |
+  =====================================
+  CA3 Part 1 Multipass - VM Ready!
+  =====================================
+  Cloud-init provisioning complete.
+  
+  Next steps:
+  1. Upload scripts to /home/ubuntu/scripts/
+  2. Run provision script
+  
+  Or connect to the VM:
+  multipass shell ca3-part1-multipass
+  =====================================
