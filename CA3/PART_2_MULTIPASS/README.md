@@ -477,13 +477,71 @@ multipass exec app -- tail -100 ~/app.log
 
 ## Checklist
 
-✅ Two VMs (db + app)  
-✅ H2 in server mode (port 9092)  
-✅ Adequate resources (2 CPUs, 2GB RAM, 10GB disk)  
-✅ Custom SSH keys (RSA 4096)  
-✅ Startup check implemented  
-✅ UFW Firewall (only app → db)  
-✅ Inter-service communication  
+- [x] Two VMs (db + app)  
+- [x] H2 in server mode (port 9092)  
+- [x] Adequate resources (2 CPUs, 2GB RAM, 10GB disk)  
+- [x] Custom SSH keys (RSA 4096)  
+- [x] Startup check implemented  
+- [x] UFW Firewall (only app -> db)  
+- [x] Inter-service communication  
+
+---
+
+## Alternative: Automated Deployment
+
+As an alternative to the manual setup above, we can use automation scripts for quick deployment.
+
+### Quick Start with Scripts
+
+```powershell
+# Run deployment script
+.\scripts\deploy.ps1
+
+# With custom repository
+.\scripts\deploy.ps1 -RepoUrl https://github.com/user/repo.git
+
+# Skip SSH key generation if already exists
+.\scripts\deploy.ps1 -SkipKeys
+
+# Show help
+.\scripts\deploy.ps1 -Help
+```
+
+The automation script will:
+1. Generate SSH keys
+2. Create and configure DB VM with H2 server
+3. Create and configure App VM with Spring Boot
+4. Configure firewall rules (UFW)
+5. Deploy and start the application
+
+**After deployment completes, access:**
+- Employees API: `http://<APP_IP>:8080/employees`
+- Orders API: `http://<APP_IP>:8080/orders`
+
+### Scripts Overview
+
+**1. deploy.ps1** (PowerShell - Main orchestrator)
+- Automates the entire setup process
+- Creates VMs with cloud-init
+- Transfers and executes setup scripts
+- Configures firewall and starts services
+
+**2. setup-db.sh** (Bash - Database configuration)
+- Downloads and configures H2 server
+- Creates systemd service
+- Starts and verifies H2
+
+**3. setup-app.sh** (Bash - Application configuration)
+- Clones repository
+- Configures application.properties
+- Sets up Gradle 8.5
+- Creates startup check script
+
+### Script Parameters
+
+```powershell
+# Full syntax
+.\scripts\deploy.ps1 [-RepoUrl <url>] [-SkipKeys] [-Help]
 
 ---
 
