@@ -110,7 +110,7 @@ After=network.target
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu
-ExecStart=/usr/bin/java -cp /home/ubuntu/h2-2.2.224.jar org.h2.tools.Server -tcp -tcpAllowOthers -tcpPort 9092 -baseDir /home/ubuntu/h2-data
+ExecStart=/usr/bin/java -cp /home/ubuntu/h2-2.2.224.jar org.h2.tools.Server -tcp -tcpAllowOthers -tcpPort 9092 -baseDir /home/ubuntu/h2-data -ifNotExists
 Restart=on-failure
 RestartSec=5
 
@@ -185,6 +185,7 @@ multipass shell db
 # Configure UFW
 sudo ufw --force enable
 sudo ufw allow 22/tcp
+# In our case: sudo ufw allow from 192.168.90.250 to any port 9092 proto tcp
 sudo ufw allow from <APP_IP> to any port 9092 proto tcp
 
 # Verify
@@ -234,6 +235,7 @@ multipass exec app -- ls -la /home/ubuntu/ca2-part2/
 # Get VM db IP
 $dbInfo = multipass info db --format json | ConvertFrom-Json
 $DB_IP = $dbInfo.info.db.ipv4[0]
+Write-Host "VM db IP:  $DB_IP"
 
 # Access VM app
 multipass shell app
@@ -249,6 +251,7 @@ cd ~/ca2-part2/app
 mkdir -p src/main/resources
 
 # Create application.properties
+# In our case: DB_IP=192.168.91.85
 cat > src/main/resources/application.properties <<EOF
 spring.datasource.url=jdbc:h2:tcp://<DB_IP>:9092/~/h2-data/payroll
 spring.datasource.driverClassName=org.h2.Driver
@@ -334,26 +337,19 @@ multipass shell app
 **Inside VM app (replace `<DB_IP>`):**
 ```bash
 # Go to project (adjust path as needed)
-# If cloned from git:
-cd ~/<repo>/CA2/PART_2/ca2-part2
-# OR if copied locally:
-cd ~/ca2-part2
+cd ~/cogsi2425-1211066-1250515-1181754-1220638/CA2/PART_2/ca2-part2
 
-# Compile
+# Set executable permission
 chmod +x gradlew
-./gradlew build --no-daemon
 
 # Run startup check
+# In our case: DB_IP=192.168.91.85 (replace with your db VM IP from Step 3)
 DB_IP=<DB_IP>
 cd ~
 ./wait-for-db.sh $DB_IP 9092
 
-# Start application in background
-# Adjust path as needed
-cd ~/<repo>/CA2/PART_2/ca2-part2
-# OR
-cd ~/ca2-part2
-
+# Start application in background (bootRun compiles automatically)
+cd ~/cogsi2425-1211066-1250515-1181754-1220638/CA2/PART_2/ca2-part2
 nohup ./gradlew bootRun --no-daemon > ~/app.log 2>&1 &
 
 # View logs
@@ -362,6 +358,8 @@ tail -f ~/app.log
 
 exit
 ```
+
+> **Note:** `./gradlew build` may fail due to Gradle 9.1.0/Spring Boot 3.3.0 incompatibility. However, `bootRun` works perfectly as it compiles and runs the application automatically.
 
 ![Application running](img/app_running.png)
 
