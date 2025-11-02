@@ -1,0 +1,12 @@
+# Chaves SSH (não commitar!)
+ssh-keys/
+*.pem
+*.key
+
+# Logs
+*.log
+
+# Arquivos temporários
+*.tmp
+*.bak
+
