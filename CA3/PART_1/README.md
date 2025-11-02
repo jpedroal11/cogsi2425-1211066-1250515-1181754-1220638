@@ -13,7 +13,7 @@ Vagrant is a tool for building and managing virtual machine environments in a si
 
    ```bash
    mkdir PART_1/Vagrant
-   cd my_vagrant_project
+   cd Vagrant
    vagrant init
    ```
 2. **Configure the Vagrantfile**: Edit the Vagrantfile to specify the base box, network settings, and any provisioning scripts you want to run.
