@@ -1,0 +1,11 @@
+tasks.register("packageJavadoc", Zip) {
+    group = "documentation"
+    description = "Generates and packages project Javadoc into a zip file."
+    dependsOn "javadoc"
+    from javadoc.destinationDir
+    destinationDirectory = layout.buildDirectory.dir("docs")
+    archiveFileName = "${project.name}-${project.version}-javadoc.zip"
+    doLast {
+        println "Javadoc packaged successfully at: ${destinationDirectory.get().asFile.absolutePath}"
+    }
+}

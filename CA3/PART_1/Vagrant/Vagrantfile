@@ -1,0 +1,9 @@
+    Vagrant.configure("2") do |config|
+      config.vm.box = "ubuntu/jammy64"
+      config.vm.hostname = "part2-vm"
+      config.vm.network "forwarded_port", guest: 8080, host: 18080
+      config.vm.synced_folder "./h2-data", "/vagrant/h2-data", create: true
+      config.vm.provision "shell", path: "provision.sh", privileged: false
+    end
+
+
