@@ -1,4 +1,3 @@
----
 - name: Show start message
   debug:
     msg: "⚙️ Starting build process for the Spring Boot app..."
@@ -17,7 +16,7 @@
   failed_when: false
 
 - name: Build the Spring Boot app using Gradle wrapper
-  shell: ./gradlew clean build -x test --no-daemon
+  shell: ./gradlew clean build -x test -x integrationTest --no-daemon
   args:
     chdir: "{{ project_dir }}"
   environment:
@@ -33,27 +32,37 @@
 - name: Run Spring Boot app using Gradle wrapper (bootRun)
   shell: nohup ./gradlew bootRun > {{ project_dir }}/app.log 2>&1 &
   args:
-      chdir: "{{ project_dir }}"
+    chdir: "{{ project_dir }}"
   environment:
-      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-      PATH: "{{ ansible_env.PATH }}:/usr/lib/jvm/java-17-openjdk-amd64/bin"
+    JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+    PATH: "{{ ansible_env.PATH }}:/usr/lib/jvm/java-17-openjdk-amd64/bin"
   async: 10
   poll: 0
 
-
-- name: Wait a few seconds for the app to start
-  pause:
-    seconds: 5
-
-- name: Check if the app is running
-  shell: pgrep -a java | grep -i jar || echo "❌ Not running"
-  register: process_status
+# --- Wait for app to finish startup and connect ---
+- name: Wait for Spring Boot app to fully start (check logs for DB connection)
+  shell: |
+    timeout 60 bash -c 'until grep -q "Connected to" {{ project_dir }}/app.log || grep -q "Started" {{ project_dir }}/app.log; do sleep 2; done'
+  register: wait_for_startup
   ignore_errors: yes
 
-- name: Show process status
-  debug:
-    var: process_status.stdout_lines
+- name: Tail final Spring Boot logs
+  shell: tail -n 500 {{ project_dir }}/app.log
+  register: app_logs
+  ignore_errors: yes
 
-- name: Show completion message
+- name: Show logs until connection confirmation
   debug:
-    msg: "✅ Spring Boot app built and started successfully using Gradle wrapper!"
+    var: app_logs.stdout_lines
+
+# --- Save logs safely ---
+- name: Ensure logs directory exists
+  file:
+    path: "{{ project_dir }}/logs"
+    state: directory
+    mode: '0755'
+
+- name: Save Spring Boot logs to file
+  copy:
+    content: "{{ app_logs.stdout }}"
+    dest: "{{ project_dir }}/logs/ansible_app_logs.txt"
