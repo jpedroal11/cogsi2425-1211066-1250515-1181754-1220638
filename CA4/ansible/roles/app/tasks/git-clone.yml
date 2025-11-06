@@ -1,0 +1,36 @@
+---
+- name: Show start message
+  debug:
+    msg: "📦 Starting app repository setup..."
+
+- name: Ensure app directory exists
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: vagrant
+    group: vagrant
+    mode: '0755'
+
+- name: Clone or update the app repository
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ app_dir }}"
+    version: main
+    force: yes
+  register: git_result
+
+- name: Show git clone/update result
+  debug:
+    var: git_result.after
+
+- name: List files in the app directory (for debugging)
+  shell: ls -la "{{ app_dir }}"
+  register: dir_listing
+
+- name: Show directory contents
+  debug:
+    var: dir_listing.stdout_lines
+
+- name: Finished cloning
+  debug:
+    msg: "✅ Repository cloned or updated successfully!"

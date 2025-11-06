@@ -1,0 +1,59 @@
+---
+- name: Show start message
+  debug:
+    msg: "⚙️ Starting build process for the Spring Boot app..."
+
+- name: Ensure Gradle wrapper is executable
+  file:
+    path: "{{ project_dir }}/gradlew"
+    mode: '0755'
+    state: file
+
+- name: Stop any existing Gradle daemon processes
+  shell: |
+    pgrep -f 'Gradle' && pkill -f 'Gradle' || echo "No Gradle process found."
+    pgrep -f 'java -jar' && pkill -f 'java -jar' || echo "No standalone process found."
+  ignore_errors: yes
+  failed_when: false
+
+- name: Build the Spring Boot app using Gradle wrapper
+  shell: ./gradlew clean build -x test --no-daemon
+  args:
+    chdir: "{{ project_dir }}"
+  environment:
+    JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+    PATH: "{{ ansible_env.PATH }}:/usr/lib/jvm/java-17-openjdk-amd64/bin"
+  register: build_output
+  poll: 10
+
+- name: Show build result
+  debug:
+    var: build_output.stdout_lines
+
+- name: Run Spring Boot app using Gradle wrapper (bootRun)
+  shell: nohup ./gradlew bootRun > {{ project_dir }}/app.log 2>&1 &
+  args:
+      chdir: "{{ project_dir }}"
+  environment:
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+      PATH: "{{ ansible_env.PATH }}:/usr/lib/jvm/java-17-openjdk-amd64/bin"
+  async: 10
+  poll: 0
+
+
+- name: Wait a few seconds for the app to start
+  pause:
+    seconds: 5
+
+- name: Check if the app is running
+  shell: pgrep -a java | grep -i jar || echo "❌ Not running"
+  register: process_status
+  ignore_errors: yes
+
+- name: Show process status
+  debug:
+    var: process_status.stdout_lines
+
+- name: Show completion message
+  debug:
+    msg: "✅ Spring Boot app built and started successfully using Gradle wrapper!"

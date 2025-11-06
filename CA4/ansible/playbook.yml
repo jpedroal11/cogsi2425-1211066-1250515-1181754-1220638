@@ -1,0 +1,5 @@
+- name: Configure App VM
+  hosts: app
+  become: yes
+  roles:
+    - app

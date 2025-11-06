@@ -1,0 +1,9 @@
+
+- name: Include dependency installation steps
+  include_tasks: install-dependencies.yml
+
+- name: Include git clone steps
+  include_tasks: git-clone.yml
+
+- name: Include build application steps
+  include_tasks: build-and-run.yml
