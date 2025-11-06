@@ -3,3 +3,8 @@
   become: yes
   roles:
     - app
+- name: Configure DB VM
+  hosts: db
+  become: yes
+  roles:
+    - db

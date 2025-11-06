@@ -1,0 +1,65 @@
+---
+- name: Install dependencies (Java)
+  apt:
+    name:
+      - openjdk-17-jdk
+      - unzip
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  register: install_result
+
+- name: Print installation result
+  debug:
+    var: install_result
+
+- name: Create directory for H2
+  file:
+    path: /opt/h2
+    state: directory
+    mode: '0755'
+
+- name: Check if H2 zip already exists
+  stat:
+    path: /tmp/h2.zip
+  register: h2_zip
+
+- name: Download H2 Database (if not already present)
+  get_url:
+    url: https://github.com/h2database/h2database/releases/download/version-2.3.232/h2-2024-08-11.zip
+    dest: /tmp/h2.zip
+    timeout: 120
+    mode: '0644'
+  when: not h2_zip.stat.exists
+  register: download_result
+  retries: 3
+  delay: 5
+  until: download_result is succeeded
+
+- name: Extract H2
+  unarchive:
+    src: /tmp/h2.zip
+    dest: /opt/h2
+    remote_src: yes
+    creates: /opt/h2/h2/bin
+  register: extract_result
+
+- name: Start H2 TCP server
+  shell: |
+    nohup java -cp /opt/h2/h2/bin/h2*.jar org.h2.tools.Server \
+      -tcp -tcpAllowOthers -tcpPort 9092 \
+      -web -webAllowOthers -webPort 8082 \
+      > /opt/h2/h2.log 2>&1 &
+  args:
+    chdir: /opt/h2
+  async: 10
+  poll: 0
+  when: extract_result is succeeded
+
+- name: Display H2 info
+  debug:
+    msg: |
+      ✅ H2 Database running:
+      - TCP port: 9092
+      - Web Console: http://192.168.56.13:8082
+      - JDBC URL: jdbc:h2:tcp://192.168.56.13:9092/~/mydb
