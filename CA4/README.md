@@ -486,5 +486,93 @@ In here we use the `get_url` module to download the H2 Database JAR file. The ta
 
 [![img.png](img/ansible_pam_policy.png)]
 
-va
 
+
+
+
+
+## User and Group Management with Secure Directory Access
+
+Implemented Ansible automation to create a **developers** group and **devuser** user on both VMs, with secure directory permissions ensuring only group members can access application and database files.
+
+### Implementation details
+
+#### 1. Common Role for User/Group Management
+
+- File: roles/common/tasks/users-groups.yml
+
+- Purpose: Creates developers group and devuser user on both app and db VMs
+
+- Tasks:
+
+```yaml
+- name: Create developers group
+  group:
+    name: developers
+    state: present
+
+- name: Create devuser
+  user:
+    name: devuser
+    groups: developers
+    append: yes
+    shell: /bin/bash
+    state: present
+```
+
+![img.png](img/users-groups.png)
+
+#### 2. Secure Directory Permissions
+
+- App VM (roles/app/tasks/git-clone.yml):
+
+```yaml
+- name: Change ownership of app directory to devuser:developers
+  file:
+    path: "{{ app_dir }}"
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'
+```    
+- DB VM (roles/db/tasks/install-dependencies.yml):
+
+```yaml
+- name: Change ownership of database directory to devuser:developers
+  file:
+    path: /home/vagrant/mydb
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'
+
+- name: Change ownership of H2 directory to devuser:developers
+  file:
+    path: /opt/h2
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'
+```    
+
+![img.png](img/directory-permissions.png)
+
+#### 3. Git Security Fix
+
+Added task to handle Git security when changing directory ownership:
+
+```yaml
+- name: Fix Git security for directory ownership change
+  shell: git config --global --add safe.directory "{{ app_dir }}"
+  args:
+    chdir: "{{ app_dir }}"
+  ignore_errors: yes
+```
+
+Security Results:
+
+- App Directory: /home/vagrant/app - Owned by devuser:developers with 750 permissions
+
+- Database Directories: /home/vagrant/mydb and /opt/h2 - Owned by devuser:developers with 750 permissions
+
+- Access Control: Only devuser and developers group members can access these directories
