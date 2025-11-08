@@ -1,0 +1,12 @@
+{
+  "description": "Health check for Spring Boot application",
+  "implementations": [
+    {
+      "name": "check_app.sh",
+      "requirements": ["shell"],
+      "files": ["healthcheck/check_app.sh"]
+    }
+  ],
+  "parameters": {}
+}
+

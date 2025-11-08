@@ -1,0 +1,12 @@
+{
+  "description": "Health check for H2 Database",
+  "implementations": [
+    {
+      "name": "check_db.sh",
+      "requirements": ["shell"],
+      "files": ["healthcheck/check_db.sh"]
+    }
+  ],
+  "parameters": {}
+}
+
