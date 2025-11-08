@@ -60,3 +60,20 @@
       - TCP port: 9092
       - Web Console: http://192.168.56.13:8082
       - JDBC URL: jdbc:h2:tcp://192.168.56.13:9092//home/vagrant/mydb/mydb
+
+
+- name: Change ownership of database directory to devuser:developers
+  file:
+    path: /home/vagrant/mydb
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'
+
+- name: Change ownership of H2 directory to devuser:developers
+  file:
+    path: /opt/h2
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'

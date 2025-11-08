@@ -1,3 +1,10 @@
+---
+- name: Configure common settings on all VMs
+  hosts: app,db
+  become: yes
+  roles:
+    - common
+
 - name: Configure DB VM
   hosts: db
   become: yes

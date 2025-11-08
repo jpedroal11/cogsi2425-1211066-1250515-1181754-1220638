@@ -34,3 +34,11 @@
 - name: Finished cloning
   debug:
     msg: "✅ Repository cloned or updated successfully!"
+
+- name: Change ownership of app directory to devuser:developers
+  file:
+    path: "{{ app_dir }}"
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'
