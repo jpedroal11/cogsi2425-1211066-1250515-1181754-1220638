@@ -1,0 +1,38 @@
+<%- |
+  String $project_path,
+  String $jar_file,
+  String $db_host,
+| -%>
+[Unit]
+Description=Spring Boot REST Service Application
+After=network.target
+
+[Service]
+Type=simple
+User=devuser
+Group=developers
+WorkingDirectory=<%= $project_path %>
+
+# Wait for database
+ExecStartPre=/bin/bash /home/vagrant/wait-for-db.sh <%= $db_host %> 9092
+
+# Start application
+ExecStart=/usr/bin/java -jar <%= $jar_file %>
+
+# Environment variables
+Environment="JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64"
+Environment="SPRING_DATASOURCE_URL=jdbc:h2:tcp://<%= $db_host %>:9092/~/mydb/mydb"
+Environment="SPRING_DATASOURCE_USERNAME=sa"
+Environment="SPRING_DATASOURCE_PASSWORD="
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
