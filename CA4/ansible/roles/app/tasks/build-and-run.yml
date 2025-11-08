@@ -23,11 +23,19 @@
     JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
     PATH: "{{ ansible_env.PATH }}:/usr/lib/jvm/java-17-openjdk-amd64/bin"
   register: build_output
+  changed_when: "'BUILD SUCCESSFUL' in build_output.stdout"
   poll: 10
 
 - name: Show build result
   debug:
     var: build_output.stdout_lines
+
+- name: Check if Spring Boot app is already running on port 8080
+  shell: |
+    ss -tln | awk '{print $4}' | grep -q ':8080' && echo "running" || echo "stopped"
+  register: app_status
+  changed_when: false
+
 
 - name: Run Spring Boot app using Gradle wrapper (bootRun)
   shell: nohup ./gradlew bootRun > {{ project_dir }}/app.log 2>&1 &
@@ -38,6 +46,8 @@
     PATH: "{{ ansible_env.PATH }}:/usr/lib/jvm/java-17-openjdk-amd64/bin"
   async: 10
   poll: 0
+  failed_when: "'FAILURE' in build_output.stdout"
+  when: "'stopped' in app_status.stdout"
 
 # --- Wait for app to finish startup and connect ---
 - name: Wait for Spring Boot app to fully start (check logs for DB connection)

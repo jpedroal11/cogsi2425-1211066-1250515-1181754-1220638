@@ -36,16 +36,22 @@
     owner: vagrant
     group: vagrant
 
-- name: Start H2 TCP server
+- name: Check if H2 is already running on port 9092
+  shell: ss -tln | awk '{print $4}' | grep -q ':9092' && echo "running" || echo "stopped"
+  register: h2_status
+  changed_when: false
+
+- name: Start H2 TCP server (only if not running)
   shell: |
     nohup java -cp /opt/h2/h2.jar org.h2.tools.Server \
       -tcp -tcpAllowOthers -tcpPort 9092 \
       -web -webAllowOthers -webPort 8082 \
+      -ifNotExists \
       > /opt/h2/h2.log 2>&1 &
   args:
     chdir: /opt/h2
-  async: 10
-  poll: 0
+  when: "'stopped' in h2_status.stdout"
+
 
 - name: Display H2 info
   debug:
