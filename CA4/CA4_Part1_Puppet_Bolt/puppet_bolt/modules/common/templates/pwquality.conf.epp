@@ -1,0 +1,24 @@
+# /etc/security/pwquality.conf
+# Puppet Bolt managed file
+
+# Minimum password length
+minlen = 12
+
+# Require at least 3 of 4 character classes
+minclass = 3
+
+# Reject dictionary words
+dictcheck = 1
+
+# Prevent passwords containing username
+usercheck = 1
+
+# Enforce for root user as well
+enforce_for_root
+
+# Maximum number of consecutive characters of the same class
+maxrepeat = 3
+
+# Maximum number of consecutive characters from the same sequence
+maxsequence = 3
+

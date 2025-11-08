@@ -1,0 +1,18 @@
+# /etc/security/faillock.conf
+# Puppet Bolt managed file
+
+# Number of failed login attempts before lockout
+deny = 5
+
+# Duration of lockout in seconds (10 minutes)
+unlock_time = 600
+
+# Time interval in seconds during which the failed attempts must occur
+fail_interval = 900
+
+# Audit failed login attempts
+audit
+
+# Don't print informative messages to the user
+silent
+
