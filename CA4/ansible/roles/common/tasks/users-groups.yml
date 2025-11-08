@@ -11,10 +11,3 @@
     append: yes
     shell: /bin/bash
     state: present
-
-# - name: Set up SSH key for devuser (optional)
-#   authorized_key:
-#     user: devuser
-#     state: present
-#     key: "{{ lookup('file', '/home/vagrant/.ssh/authorized_keys') }}"
-#   when: ansible_user == 'vagrant'

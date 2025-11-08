@@ -486,5 +486,177 @@ In here we use the `get_url` module to download the H2 Database JAR file. The ta
 
 [![img.png](img/ansible_pam_policy.png)]
 
-va
 
+
+
+
+
+## User and Group Management with Secure Directory Access
+
+Implemented Ansible automation to create a **developers** group and **devuser** user on both VMs, with secure directory permissions ensuring only group members can access application and database files.
+
+### Implementation details
+
+#### 1. Common Role for User/Group Management
+
+- File: roles/common/tasks/users-groups.yml
+
+- Purpose: Creates developers group and devuser user on both app and db VMs
+
+- Tasks:
+
+```yaml
+- name: Create developers group
+  group:
+    name: developers
+    state: present
+
+- name: Create devuser
+  user:
+    name: devuser
+    groups: developers
+    append: yes
+    shell: /bin/bash
+    state: present
+```
+
+![img.png](img/users-groups.png)
+
+#### 2. Secure Directory Permissions
+
+- App VM (roles/app/tasks/git-clone.yml):
+
+```yaml
+- name: Change ownership of app directory to devuser:developers
+  file:
+    path: "{{ app_dir }}"
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'
+```    
+- DB VM (roles/db/tasks/install-dependencies.yml):
+
+```yaml
+- name: Change ownership of database directory to devuser:developers
+  file:
+    path: /home/vagrant/mydb
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'
+
+- name: Change ownership of H2 directory to devuser:developers
+  file:
+    path: /opt/h2
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'
+```    
+
+![img.png](img/directory-permissions.png)
+
+#### 3. Git Security Fix
+
+Added task to handle Git security when changing directory ownership:
+
+```yaml
+- name: Fix Git security for directory ownership change
+  shell: git config --global --add safe.directory "{{ app_dir }}"
+  args:
+    chdir: "{{ app_dir }}"
+  ignore_errors: yes
+```
+
+Security Results:
+
+- App Directory: /home/vagrant/app - Owned by devuser:developers with 750 permissions
+
+- Database Directories: /home/vagrant/mydb and /opt/h2 - Owned by devuser:developers with 750 permissions
+
+- Access Control: Only devuser and developers group members can access these directories
+
+
+
+
+## Health Check Implementation
+
+Implemented comprehensive health checks to verify both Spring Boot application and H2 database are running correctly and responding to requests.
+
+### Implementation Details
+1. App VM Health Check (roles/app/tasks/health-check.yml)
+
+    - Purpose: Verify Spring Boot REST API is responding successfully
+
+Implementation:
+
+```yaml
+- name: Check if Spring Boot app is responding
+  uri:
+    url: "http://localhost:8080/employees"
+    method: GET
+    status_code: 200
+    timeout: 30
+  register: health_check
+  retries: 5
+  delay: 10
+  until: health_check.status == 200
+  ignore_errors: yes
+```
+
+2. DB VM Health Check (roles/db/tasks/health-check.yml)
+
+    - Purpose: Verify H2 database port is open and web console is accessible
+
+Implementation:
+
+```yaml
+- name: Check if H2 database port is open
+  wait_for:
+    port: 9092
+    host: "{{ ansible_default_ipv4.address }}"
+    delay: 5
+    timeout: 30
+    state: started
+
+- name: Check if H2 web console is responding
+  uri:
+    url: "http://localhost:8082"
+    method: GET
+    status_code: 200, 401, 302
+    timeout: 10
+```
+
+Health Check Results
+
+- App VM: ✅ HTTP 200 response from http://localhost:8080/employees
+
+- DB VM: ✅ Port 9092 open and accepting connections
+
+- DB VM: ✅ H2 web console accessible on port 8082
+
+### Playbook Execution Order
+Updated playbook to ensure proper dependency management:
+
+```yaml
+- name: Configure common settings on all VMs  
+  hosts: app,db
+  become: yes
+  roles:
+    - common
+
+- name: Configure DB VM                       
+  hosts: db
+  become: yes
+  roles:
+    - db
+
+- name: Configure App VM                      
+  hosts: app
+  become: yes
+  roles:
+    - app
+```
+
+![img.png](img/health-check.png)
