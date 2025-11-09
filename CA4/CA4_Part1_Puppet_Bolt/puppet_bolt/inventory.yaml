@@ -4,27 +4,20 @@ groups:
   - name: vms
     targets:
       - name: app
-        uri: 192.168.56.12
-        config:
-          transport: ssh
-          ssh:
-            user: vagrant
-            private-key: ../../../CA3/PART_2_MULTIPASS/.vagrant/machines/app/virtualbox/private_key
-            host-key-check: false
-            run-as: root
+        uri: vagrant@192.168.56.12:22
       
       - name: db
-        uri: 192.168.56.13
-        config:
-          transport: ssh
-          ssh:
-            user: vagrant
-            private-key: ../../../CA3/PART_2_MULTIPASS/.vagrant/machines/db/virtualbox/private_key
-            host-key-check: false
-            run-as: root
+        uri: vagrant@192.168.56.13:22
+    
+    config:
+      transport: ssh
+      ssh:
+        private-key: bolt_rsa_key
+        host-key-check: false
+        native-ssh: true
+        run-as: root
     
     vars:
       project_name: "cogsi-spring-app"
       db_host: "192.168.56.13"
       app_host: "192.168.56.12"
-
