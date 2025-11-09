@@ -327,12 +327,12 @@ project_dir: "{{ app_dir }}/CA4/ca2-part2/"
 
 - App is running:
 
-[![img.png](img/ansible_run_app.png)]
+![img.png](img/ansible_run_app.png)
 
 
 - Spring Boot App logs displaying connection to H2 Database:
 
-[![img.png](img/ansible_spring_logs.png)]
+![img.png](img/ansible_spring_logs.png)
 
 And also create the `pam_password_policy` role to enforce PAM password policies across all VMs.
 
