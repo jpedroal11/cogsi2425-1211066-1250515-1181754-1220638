@@ -1,0 +1,6 @@
+{
+  "description": "Configure users, groups and PAM policy",
+  "supports_noop": false,
+  "input_method": "environment"
+}
+
