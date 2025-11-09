@@ -1,0 +1,8 @@
+# Vagrant
+.vagrant/
+
+# Puppet Bolt temporary files
+puppet_bolt/.rerun.json
+puppet_bolt/bolt-debug.log
+puppet_bolt/*.log
+

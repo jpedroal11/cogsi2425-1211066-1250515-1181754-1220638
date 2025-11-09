@@ -1,0 +1,13 @@
+name: cogsi_ca4_bolt
+modulepath:
+  - modules
+
+format: human
+
+apply-settings:
+  show_diff: true
+
+log:
+  console:
+    level: info
+

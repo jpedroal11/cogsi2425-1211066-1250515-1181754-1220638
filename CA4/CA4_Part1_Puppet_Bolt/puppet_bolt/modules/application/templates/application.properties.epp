@@ -1,0 +1,21 @@
+<%- | String $db_host | -%>
+# Spring Boot Application Configuration
+# Managed by Puppet Bolt
+
+# H2 Database Configuration
+spring.datasource.url=jdbc:h2:tcp://<%= $db_host %>:9092/~/mydb/mydb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+
+# Disable H2 console
+spring.h2.console.enabled=false
+
+# JPA Configuration
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# Server Configuration
+server.port=8080
+

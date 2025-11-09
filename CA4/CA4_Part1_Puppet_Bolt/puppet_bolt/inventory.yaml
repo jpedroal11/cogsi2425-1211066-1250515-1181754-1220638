@@ -1,0 +1,23 @@
+version: 2
+
+groups:
+  - name: vms
+    targets:
+      - name: app
+        uri: vagrant@192.168.56.12:22
+      
+      - name: db
+        uri: vagrant@192.168.56.13:22
+    
+    config:
+      transport: ssh
+      ssh:
+        private-key: bolt_rsa_key
+        host-key-check: false
+        native-ssh: true
+        run-as: root
+    
+    vars:
+      project_name: "cogsi-spring-app"
+      db_host: "192.168.56.13"
+      app_host: "192.168.56.12"

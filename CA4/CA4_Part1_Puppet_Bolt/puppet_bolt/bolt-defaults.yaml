@@ -1,0 +1,4 @@
+ssh:
+  native-ssh: true
+  host-key-check: false
+
