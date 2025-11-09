@@ -1,28 +1,58 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/jammy64"
+  
+  # Force RSA key generation for Bolt compatibility on Windows
+  config.ssh.insert_key = true
 
-  # Define the DB VM
-   config.vm.define "db" do |db_vm|
-     db_vm.vm.hostname = "db"
-     db_vm.vm.network "private_network", ip: "192.168.56.13"
-
-     db_vm.vm.provision "ansible" do |ansible|
-       ansible.playbook = "../ansible/playbook.yml"
-       ansible.inventory_path = "../ansible/hosts.ini"
-       ansible.limit = "db"
-     end
-   end
-
-  # Define the App VM
-  config.vm.define "app" do |app_vm|
-    app_vm.vm.hostname = "app"
-    app_vm.vm.network "private_network", ip: "192.168.56.12"
-
-    app_vm.vm.provision "ansible" do |ansible|
-      ansible.playbook = "../ansible/playbook.yml"
-      ansible.inventory_path = "../ansible/hosts.ini"
-      ansible.limit = "app"
+  # Database VM
+  config.vm.define "db" do |db|
+    db.vm.hostname = "db"
+    db.vm.network "private_network", ip: "192.168.56.13"
+    
+    db.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"
+      vb.cpus = 1
+      vb.name = "ca4-bolt-db"
     end
+    
+    # Basic system update and convert SSH keys to RSA
+    db.vm.provision "shell", inline: <<-SHELL
+      apt-get update
+      apt-get install -y python3
+      
+      # Regenerate SSH host keys with RSA only
+      rm -f /etc/ssh/ssh_host_ed25519_key*
+      rm -f /etc/ssh/ssh_host_rsa_key*
+      ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+      systemctl restart sshd
+    SHELL
   end
 
+  # Application VM
+  config.vm.define "app" do |app|
+    app.vm.hostname = "app"
+    app.vm.network "private_network", ip: "192.168.56.12"
+    
+    app.vm.provider "virtualbox" do |vb|
+      vb.memory = "2048"
+      vb.cpus = 2
+      vb.name = "ca4-bolt-app"
+    end
+    
+    # Basic system update and convert SSH keys to RSA
+    app.vm.provision "shell", inline: <<-SHELL
+      apt-get update
+      apt-get install -y python3
+      
+      # Regenerate SSH host keys with RSA only
+      rm -f /etc/ssh/ssh_host_ed25519_key*
+      rm -f /etc/ssh/ssh_host_rsa_key*
+      ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N ""
+      systemctl restart sshd
+    SHELL
+  end
+
+  # Note: Configuration is done via Puppet Bolt
+  # Run from puppet_bolt directory:
+  #   bolt plan run deploy --targets all
 end
