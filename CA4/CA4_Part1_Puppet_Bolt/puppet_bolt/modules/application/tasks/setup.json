@@ -1,0 +1,13 @@
+{
+  "description": "Setup Spring Boot Application",
+  "parameters": {
+    "db_host": {
+      "description": "Database host IP address",
+      "type": "String",
+      "default": "192.168.56.13"
+    }
+  },
+  "supports_noop": false,
+  "input_method": "environment"
+}
+
