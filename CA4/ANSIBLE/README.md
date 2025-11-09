@@ -33,7 +33,6 @@ Add in the following content to the `Vagrantfile` to set up a database VM:
 
      db_vm.vm.provision "ansible" do |ansible|
        ansible.playbook = "../ansible/playbook.yml"
-       ansible.inventory_path = "../ansible/hosts.ini"
        ansible.limit = "db"
      end
    end
@@ -51,7 +50,6 @@ The VM is provisioned using an Ansible playbook located at `../ansible/playbook.
 
     app_vm.vm.provision "ansible" do |ansible|
       ansible.playbook = "../ansible/playbook.yml"
-      ansible.inventory_path = "../ansible/hosts.ini"
       ansible.limit = "app"
         end
     end
@@ -68,6 +66,9 @@ In this segment we define a VM named "app" with a private network IP address of 
     [db]
     192.168.56.13 ansible_user=vagrant ansible_ssh_private_key_file=../Vagrant/.vagrant/machines/db/virtualbox/private_key
     ```
+   ![img.png](img/ansible_host_ini.png)
+
+
 This configuration defines two groups: `app` and `db`, each containing the respective VM's IP address and SSH connection details.
 2. - Add the playbook file `playbook.yml` in the `ansible` directory to define the tasks to be executed on the target hosts. For example:
    ```yaml
@@ -159,6 +160,9 @@ In install-dependencies.yml, you can define tasks to install necessary packages 
 - name: Install dependencies
   include_tasks: install-dependencies.yml
 ```
+- App Vm can reach the DB VM:
+
+![img.png](img/ansible_ping_db.png)
 
 And the directory structure for the `app` role could look like this:
 ```text
@@ -319,6 +323,17 @@ repo_url: "https://github.com/jpedroal11/cogsi2425-1211066-1250515-1181754-12206
 app_dir: "/home/vagrant/app"
 project_dir: "{{ app_dir }}/CA4/ca2-part2/"
 ```
+
+
+- App is running:
+
+[![img.png](img/ansible_run_app.png)]
+
+
+- Spring Boot App logs displaying connection to H2 Database:
+
+[![img.png](img/ansible_spring_logs.png)]
+
 And also create the `pam_password_policy` role to enforce PAM password policies across all VMs.
 
 ```text
@@ -404,6 +419,11 @@ usercheck = 1
 
 ```
 
+- PAM Policie being enforced:
+
+![img.png](img/ansible_pam_policy.png)
+
+
 ## Idempotency in Ansible Playbooks
 In here to ensure  that the playbooks are idempotent we use the folwing:
 
@@ -458,33 +478,14 @@ In here we use the `state: present` directive to ensure that the specified packa
 ```
 In here we use the `get_url` module to download the H2 Database JAR file. The task is idempotent because Ansible will only download the file if it does not already exist at the specified destination (`/opt/h2/h2.jar`). If the file is already present, Ansible will skip the download, ensuring that running the playbook multiple times does not result in redundant downloads.
 
-##  Outputs
-
-- App Vm can reach the DB VM:
-
-[![img.png](img/ansible_ping_db.png)]
-
-
--App is running:
-
-[![img.png](img/ansible_run_app.png)]
-
-
-- Spring Boot App logs displaying connection to H2 Database:
-
-[![img.png](img/ansible_spring_logs.png)]
-
 
 - Displaying idempotency when re-running the playbook:
 
-[![img.png](img/ansible_idempotency_before_db.png)]
+![img.png](img/ansible_idempotency_before_db.png)
 
-[![img.png](img/ansible_idempotency_after_db.png)]
+![img.png](img/ansible_idempotency_after_db.png)
 
 
-- PAM Policie being enforced:
-
-[![img.png](img/ansible_pam_policy.png)]
 
 
 
