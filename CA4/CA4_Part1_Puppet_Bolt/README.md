@@ -41,11 +41,11 @@ Automates deployment of:
    3.x.x
    ```
 
-### Step 0.2: Verificar VMs do CA3 Part 2
+### Step 0.2: Verificar VMs (criadas em CA4/CA4_Part1_Puppet_Bolt/Vagrant)
 
-1. **Ir para diretório do CA3:**
+1. **Ir para diretório do Vagrant:**
    ```powershell
-   cd ..\..\CA3\PART_2_MULTIPASS
+   cd Vagrant
    ```
 
 2. **Verificar status das VMs:**
@@ -70,8 +70,8 @@ Automates deployment of:
 
 4. **Verificar IPs das VMs:**
    ```powershell
-   vagrant ssh app -c "ip addr show eth1 | grep 'inet '"
-   vagrant ssh db -c "ip addr show eth1 | grep 'inet '"
+   vagrant ssh app -c "ip addr show enp0s8 | grep 'inet '"
+   vagrant ssh db -c "ip addr show enp0s8 | grep 'inet '"
    ```
    
    Expected:
@@ -80,27 +80,27 @@ Automates deployment of:
    
    **Nota:** Se os IPs forem diferentes, precisas editar `puppet_bolt/inventory.yaml`
 
-5. **Voltar para diretório CA4:**
+5. **Voltar para diretório CA4_Part1_Puppet_Bolt:**
    ```powershell
-   cd ..\..\CA4\CA4_Part1_Puppet_Bolt
+   cd ..
    ```
 
 ### Step 0.3: Verificar Conectividade SSH (Opcional mas Recomendado)
 
 ```powershell
 # Testar SSH para VM app
-ssh -i ..\..\CA3\PART_2_MULTIPASS\.vagrant\machines\app\virtualbox\private_key vagrant@192.168.56.12 "echo Connected to app"
+ssh -o StrictHostKeyChecking=no -i Vagrant\.vagrant\machines\app\virtualbox\private_key vagrant@192.168.56.12 "echo Connected to app"
 
 # Testar SSH para VM db  
-ssh -i ..\..\CA3\PART_2_MULTIPASS\.vagrant\machines\db\virtualbox\private_key vagrant@192.168.56.13 "echo Connected to db"
+ssh -o StrictHostKeyChecking=no -i Vagrant\.vagrant\machines\db\virtualbox\private_key vagrant@192.168.56.13 "echo Connected to db"
 ```
 
 Se ambos responderem "Connected to ..." está tudo OK.
 
 **Se der erro "Permission denied":** As chaves SSH podem estar com permissões erradas. No PowerShell:
 ```powershell
-icacls "..\..\CA3\PART_2_MULTIPASS\.vagrant\machines\app\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
-icacls "..\..\CA3\PART_2_MULTIPASS\.vagrant\machines\db\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
+icacls "Vagrant\.vagrant\machines\app\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
+icacls "Vagrant\.vagrant\machines\db\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
 ```
 
 ---
@@ -279,7 +279,7 @@ bolt command run 'uptime' --targets all
 ```
 
 Se falhar:
-- Verifica se as VMs estão running: `vagrant status` (no diretório CA3/PART_2_MULTIPASS)
+- Verifica se as VMs estão running: `vagrant status` (no diretório Vagrant)
 - Verifica caminhos das chaves SSH no `inventory.yaml`
 - Testa SSH manualmente (ver Step 0.3)
 
@@ -350,9 +350,10 @@ Após completar todos os steps, verifica:
 
 **Solução:**
 ```powershell
-cd ..\..\CA3\PART_2_MULTIPASS
+cd Vagrant
 vagrant status
 vagrant up  # se necessário
+cd ..
 ```
 
 ### 2. "Permission denied (publickey)"
@@ -361,8 +362,8 @@ vagrant up  # se necessário
 
 **Solução:**
 ```powershell
-icacls "..\..\CA3\PART_2_MULTIPASS\.vagrant\machines\app\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
-icacls "..\..\CA3\PART_2_MULTIPASS\.vagrant\machines\db\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
+icacls "Vagrant\.vagrant\machines\app\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
+icacls "Vagrant\.vagrant\machines\db\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
 ```
 
 ### 3. Serviços não iniciam
