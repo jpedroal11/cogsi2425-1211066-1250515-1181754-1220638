@@ -1,436 +1,532 @@
-# CA4 - Configuration Management with Puppet Bolt
+# Puppet Bolt - Ansible Alternative
 
-## Overview
+This repository contains the alternative implementation of CA4 using **Puppet Bolt** as the configuration management tool instead of Ansible. Puppet Bolt is an open-source, agentless orchestration tool that allows you to automate tasks across your infrastructure using SSH.
 
-Alternative implementation to Ansible using **Puppet Bolt** for configuration management.
+The implementation follows the same requirements as the Ansible version:
+- Deploy H2 Database server on VM1 (db)
+- Deploy Spring Boot REST application on VM2 (app)
+- Enforce PAM password policies on both VMs
+- Create developers group and devuser with secure permissions
+- Implement health checks to verify services
+  
+---
 
-Automates deployment of:
-- **VM db:** H2 Database Server (TCP port 9092, Web Console 8082)
-- **VM app:** Spring Boot REST Application (port 8080)
-- **Both VMs:** PAM password policy, users, groups, and permissions
+## Why Puppet Bolt?
+
+Puppet Bolt was chosen as an alternative to Ansible because:
+
+| Feature | Description |
+|---------|-------------|
+| **Declarative Paradigm** | Define desired state, not procedural steps |
+| **Idempotency by Design** | Resources are inherently idempotent |
+| **Automatic Dependencies** | Handles resource relationships automatically |
+| **Strong Type System** | Prevents configuration errors |
+
+### Key Differences from Ansible
+
+| Aspect | Ansible | Puppet Bolt |
+|--------|---------|-------------|
+| **Language** | YAML | Puppet DSL (Ruby-based) |
+| **Paradigm** | Procedural | Declarative |
+| **Execution** | Sequential | Dependency graph |
+| **Idempotency** | Manual (`changed_when`) | Automatic (built-in) |
+| **State** | Stateless | Can be stateful |
+| **Learning Curve** | Easy | Moderate |
 
 ---
 
-## Prerequisites
+## Installation
 
-### Step 0.1: Install Puppet Bolt (Windows - Sem Chocolatey)
+### Ubuntu/Debian
+```bash
+# Download and install Puppet repository
+wget https://apt.puppet.com/puppet-tools-release-jammy.deb
+sudo dpkg -i puppet-tools-release-jammy.deb
 
-1. **Download o instalador:**
-   - Vai a: https://puppet.com/docs/bolt/latest/bolt_installing.html
-   - Clica em "Windows"
-   - Download do ficheiro `.msi` (aprox. 60MB)
-   - Exemplo: `puppet-bolt-x64-latest.msi`
+# Update package list
+sudo apt-get update
 
-2. **Instalar:**
-   - Executa o ficheiro `.msi` que descarregaste
-   - Clica "Next" → "Next" → "Install"
-   - Se pedir permissões de administrador, aceita
-   - Aguarda instalação (~2 minutos)
-   - Clica "Finish"
+# Install Puppet Bolt
+sudo apt-get install puppet-bolt -y
 
-3. **IMPORTANTE: Fecha e reabre o PowerShell**
-   - O PowerShell precisa de ser reiniciado para reconhecer o comando `bolt`
-
-4. **Verificar instalação:**
-   ```powershell
-   bolt --version
-   ```
-   
-   Deves ver algo como:
-   ```
-   3.x.x
-   ```
-
-### Step 0.2: Verificar VMs (criadas em CA4/CA4_Part1_Puppet_Bolt/Vagrant)
-
-1. **Ir para diretório do Vagrant:**
-   ```powershell
-   cd Vagrant
-   ```
-
-2. **Verificar status das VMs:**
-   ```powershell
-   vagrant status
-   ```
-   
-   Deves ver:
-   ```
-   Current machine states:
-   
-   app                       running (virtualbox)
-   db                        running (virtualbox)
-   ```
-
-3. **Se as VMs não estiverem running:**
-   ```powershell
-   vagrant up
-   ```
-   
-   Aguarda que as VMs iniciem (~3-5 minutos)
-
-4. **Verificar IPs das VMs:**
-   ```powershell
-   vagrant ssh app -c "ip addr show enp0s8 | grep 'inet '"
-   vagrant ssh db -c "ip addr show enp0s8 | grep 'inet '"
-   ```
-   
-   Expected:
-   - app: 192.168.56.12
-   - db: 192.168.56.13
-   
-   **Nota:** Se os IPs forem diferentes, precisas editar `puppet_bolt/inventory.yaml`
-
-5. **Voltar para diretório CA4_Part1_Puppet_Bolt:**
-   ```powershell
-   cd ..
-   ```
-
-### Step 0.3: Verificar Conectividade SSH (Opcional mas Recomendado)
-
-```powershell
-# Testar SSH para VM app
-ssh -o StrictHostKeyChecking=no -i Vagrant\.vagrant\machines\app\virtualbox\private_key vagrant@192.168.56.12 "echo Connected to app"
-
-# Testar SSH para VM db  
-ssh -o StrictHostKeyChecking=no -i Vagrant\.vagrant\machines\db\virtualbox\private_key vagrant@192.168.56.13 "echo Connected to db"
+# Verify installation
+bolt --version
 ```
 
-Se ambos responderem "Connected to ..." está tudo OK.
-
-**Se der erro "Permission denied":** As chaves SSH podem estar com permissões erradas. No PowerShell:
-```powershell
-icacls "Vagrant\.vagrant\machines\app\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
-icacls "Vagrant\.vagrant\machines\db\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
+### Alternative: Using snap
+```bash
+sudo snap install puppet-bolt --classic
+bolt --version
 ```
 
 ---
 
 ## Project Structure
-
 ```
-CA4/CA4_Part1_Puppet_Bolt/
-├── README.md                   # This file
-├── puppet_bolt/               # Bolt project
-│   ├── bolt-project.yaml
-│   ├── inventory.yaml
-│   ├── modules/
-│   │   ├── common/           # Users, groups, PAM
-│   │   ├── database/         # H2 Database
-│   │   └── application/      # Spring Boot
-│   ├── plans/
-│   │   ├── deploy.pp
-│   │   └── healthcheck.pp
-│   └── tasks/
-│       └── healthcheck/
-├── ca2-part2/                # Spring Boot app
-└── img/                      # Screenshots
+puppet_bolt/
+├── bolt-project.yaml              # Bolt project configuration
+├── inventory.yaml                 # Target VMs inventory (app, db)
+│
+├── plans/                         # Bolt plans (orchestration workflows)
+│   └── deploy.pp                  # Main deployment plan (4 steps)
+│
+├── modules/                       # Puppet modules
+│   │
+│   ├── common/                    # Common configuration module
+│   │   ├── manifests/
+│   │   │   └── init.pp            # Users, groups, PAM configuration
+│   │   └── templates/
+│   │       ├── pwquality.conf.epp # Password quality requirements
+│   │       └── faillock.conf.epp  # Account lockout policy
+│   │
+│   ├── database/                  # H2 Database module
+│   │   └── manifests/
+│   │       └── init.pp            # H2 installation & systemd service
+│   │
+│   ├── application/               # Spring Boot application module
+│   │   └── manifests/
+│   │       └── init.pp            # Git clone, Maven build, deployment
+│   │
+│   └── healthcheck/               # Health check module
+│       └── tasks/
+│           ├── check_app.sh       # Application health verification
+│           └── check_db.sh        # Database health verification
+│
+├── scripts/                       # Utility scripts
+│   └── test_idempotency.sh        # Idempotency testing script
+│
+└── outputs/                       # Documentation and logs
+    └── screenshots/               # Deployment screenshots
+        ├── 01_connectivity.png    # SSH connectivity test
+        ├── 02_inventory.png       # Inventory verification
+        ├── 03_first_deployment.png    # Initial deployment
+        └── 04_second_deployment.png   # Idempotency verification
 ```
 
 ---
 
-## Step 1: Check Connectivity
+## Configuration
 
-```powershell
-cd puppet_bolt
-bolt command run 'echo "Connected to $(hostname)"' --targets all
+### Inventory Setup
+
+The `inventory.yaml` file defines target hosts:
+```yaml
+version: 2
+
+groups:
+  - name: all_vms
+    targets:
+      - name: app
+        uri: 192.168.56.12
+        config:
+          transport: ssh
+          ssh:
+            user: vagrant
+            private-key: ../../Vagrant/.vagrant/machines/app/virtualbox/private_key
+            run-as: root
+          
+      - name: db
+        uri: 192.168.56.13
+        config:
+          transport: ssh
+          ssh:
+            user: vagrant
+            private-key: ../../Vagrant/.vagrant/machines/db/virtualbox/private_key
+            run-as: root
 ```
 
-Expected output:
+**Verify inventory:**
+```bash
+bolt inventory show --targets all_vms
 ```
-Started on app...
-Started on db...
-Finished on app:
-  STDOUT: Connected to app
-Finished on db:
-  STDOUT: Connected to db
-Successful on 2 targets: app,db
+
+![Inventory](img/02_inventory.png)
+
+*The inventory shows both VMs (app and db) with their configuration.*
+
+---
+
+## Implementation
+
+### Common Module
+
+Configures settings for all VMs:
+- Creates `developers` group (GID 3000)
+- Creates `devuser` (UID 3000)
+- Configures PAM password policy
+
+**PAM Policy Requirements:**
+- **Minimum length:** 12 characters
+- **Character classes:** At least 3 of 4 (uppercase, lowercase, digits, symbols)
+- **Dictionary check:** Enabled
+- **Username check:** Enabled
+- **Password history:** Last 5 passwords remembered
+- **Account lockout:** 5 failed attempts = 10 minute lockout
+
+```puppet
+class common {
+  group { 'developers':
+    ensure => present,
+    gid    => 3000,
+  }
+
+  user { 'devuser':
+    ensure     => present,
+    uid        => 3000,
+    groups     => ['developers'],
+    managehome => true,
+    shell      => '/bin/bash',
+    require    => Group['developers'],
+  }
+
+  # PAM configuration
+  file { '/etc/security/pwquality.conf':
+    ensure  => file,
+    content => epp('common/pwquality.conf.epp'),
+  }
+}
+```
+
+### Database Module
+
+Deploys H2 Database server:
+- Installs Java 17
+- Downloads H2 JAR file
+- Creates systemd service
+- Sets permissions to devuser:developers (mode 750)
+
+```puppet
+class database {
+  package { 'openjdk-17-jdk':
+    ensure => installed,
+  }
+
+  exec { 'download_h2':
+    command => '/usr/bin/wget https://.../h2.jar -O /opt/h2/h2.jar',
+    creates => '/opt/h2/h2.jar',
+  }
+
+  service { 'h2':
+    ensure => running,
+    enable => true,
+  }
+}
+```
+
+### Application Module
+
+Deploys Spring Boot application:
+- Clones repository from GitHub
+- Builds with Gradle
+- Creates systemd service
+- Sets permissions to devuser:developers (mode 750)
+
+```puppet
+class application {
+  exec { 'git_clone_app':
+    command => "/usr/bin/git clone ${repo_url} ${app_dir}/repo",
+    creates => "${app_dir}/repo/.git",
+  }
+
+  exec { 'gradle_build':
+    command => "${project_dir}/gradlew clean build",
+    creates => "${project_dir}/build/libs/*.jar",
+  }
+
+  service { 'springboot':
+    ensure => running,
+    enable => true,
+  }
+}
+```
+
+---
+
+## Deployment
+
+### Test Connectivity
+
+Before deploying, verify SSH connectivity:
+
+```bash
+bolt command run 'echo "Connected to $(hostname)"' --targets all_vms
 ```
 
 ![Connectivity Test](img/01_connectivity.png)
 
----
-
-## Step 2: Show Inventory
-
-```powershell
-bolt inventory show --targets all
-```
-
-Expected: Shows both VMs with SSH configuration.
-
-![Inventory Output](img/02_inventory.png)
+*Both VMs respond successfully, confirming SSH access.*
 
 ---
 
-## Step 3: Deploy Complete Infrastructure
+### Run Deployment
 
-```powershell
-bolt plan run deploy --targets all
+Execute the main deployment plan:
+```bash
+bolt plan run deploy --targets all_vms
 ```
 
-This executes:
-1. **Common configuration** (both VMs)
-   - Creates group `developers` (GID 3000)
-   - Creates user `devuser` (UID 3000)
-   - Configures PAM password policy
-   - Configures account lockout policy
+**Deployment Steps:**
+1. **Common configuration** - Users, groups, PAM policy
+2. **Database setup** - H2 installation and service
+3. **Application setup** - Spring Boot build and deployment
+4. **Health checks** - Verify services are running
 
-2. **Database VM** (db)
-   - Downloads H2 Database v2.4.240
-   - Configures TCP server (port 9092)
-   - Configures web console (port 8082)
-   - Creates systemd service
-
-3. **Application VM** (app)
-   - Clones Spring Boot repository
-   - Builds with Gradle
-   - Configures database connection
-   - Creates systemd service
-
-Duration: ~5-10 minutes
+#### First Run
 
 ![First Deployment](img/03_first_deployment.png)
 
+*First run shows multiple changes as resources are created and configured.*
+
+**First Run Summary:**
+- Total time: ~29 seconds (29.243s)
+- Application built successfully
+- Spring Boot service created and started
+- REST API available at: http://192.168.56.12:8080/employees
+
 ---
 
-## Step 4: Verify Idempotency
+## Outputs
 
-Run deployment again:
+### Idempotency Verification
 
-```powershell
-bolt plan run deploy --targets all
+One of Puppet's core strengths is built-in idempotency. Running the deployment again should show minimal or no changes.
+```bash
+# Second run
+bolt plan run deploy --targets all_vms
 ```
 
-Second run should show **0 or minimal changes**.
+#### Second Run (Idempotency)
 
-![Second Deployment - Idempotency](img/04_second_deployment.png)
+![Second Deployment](outputs/screenshots/04_second_deployment.png)
+
+*Second run shows minimal changes, proving idempotency.*
+
+**Idempotency Analysis:**
+
+| Metric | First Run | Second Run |
+|--------|-----------|------------|
+| **Duration** | 29.24s | 21.22s |
+| **Result** | Multiple changes | Minimal changes |
+| **Build** | Full build | No rebuild (already exists) |
+
+**Key Observations:**
+- Resources like `package`, `file`, `service` are idempotent by design
+- The `exec` resource uses `creates` parameter to ensure idempotency
+- No redundant builds or downloads on subsequent runs
+- Services only restart if configuration changes
 
 ---
 
-## Step 5: Run Health Checks
+### PAM Password Policy
 
-```powershell
-bolt plan run healthcheck --targets all
+Verify PAM configuration:
+```bash
+bolt command run 'cat /etc/security/pwquality.conf' --targets all_vms
 ```
 
-Verifies:
-- H2 service running
-- H2 TCP port 9092 listening
-- Spring Boot service running
-- Spring Boot HTTP endpoint responding
+**Expected Output:**
+```
+minlen = 12
+minclass = 3
+dictcheck = 1
+usercheck = 1
+```
 
-![Health Checks](img/05_healthchecks.png)
+**Testing Password Policy:**
+```bash
+sudo passwd vagrant
+# Try: "weak123" → REJECTED (too short, dictionary word)
+# Try: "Abc123!@Xyz456" → ACCEPTED
+```
+
+**Sample rejection messages:**
+```
+BAD PASSWORD: The password is shorter than 12 characters
+BAD PASSWORD: The password contains less than 3 character classes
+BAD PASSWORD: The password fails the dictionary check
+```
 
 ---
 
-## Step 6: Verify Users and Groups
+### Users and Groups Management
 
-```powershell
-bolt command run 'id devuser' --targets all
-bolt command run 'getent group developers' --targets all
+Verify user and group creation:
+```bash
+bolt command run 'id devuser' --targets all_vms
+bolt command run 'getent group developers' --targets all_vms
+```
+
+**Expected Output:**
+```
+uid=3000(devuser) gid=3000(developers) groups=3000(developers)
+developers:x:3000:devuser
+```
+
+**User Details:**
+- **Username:** devuser
+- **UID:** 3000
+- **Primary Group:** developers (GID: 3000)
+- **Home Directory:** /home/devuser
+- **Shell:** /bin/bash
+
+---
+
+### Directory Permissions
+
+Verify secure directory permissions:
+```bash
+bolt command run 'ls -la /opt/h2' --targets db
+bolt command run 'ls -la /home/vagrant/app' --targets app
+```
+
+**Expected Output:**
+```
+drwxr-x--- 2 devuser developers 4096 Nov  9 23:38 /opt/h2
+drwxr-x--- 8 devuser developers 4096 Nov  9 23:38 /home/vagrant/app
+```
+
+**Permission Summary:**
+
+| Directory | Owner | Group | Mode | Description |
+|-----------|-------|-------|------|-------------|
+| `/opt/h2` | devuser | developers | 750 | H2 database binaries |
+| `/home/vagrant/mydb` | devuser | developers | 750 | H2 database files |
+| `/home/vagrant/app` | devuser | developers | 750 | Spring Boot application |
+
+**Permission Breakdown (750):**
+- **Owner (7):** Read, Write, Execute
+- **Group (5):** Read, Execute
+- **Others (0):** No access
+
+---
+
+### Health Checks
+
+Verify services are running:
+```bash
+bolt command run 'systemctl status h2 --no-pager' --targets db
+bolt command run 'systemctl status springboot --no-pager' --targets app
+```
+
+**Health Check Results:**
+
+#### Database VM (H2)
+```bash
+bolt command run 'systemctl is-active h2 && ss -tln | grep :9092' --targets db
 ```
 
 Expected:
 ```
-devuser: uid=3000(devuser) gid=3000(developers) groups=3000(developers)
-developers:x:3000:
+active
+0.0.0.0:9092    LISTEN
 ```
 
-![Users and Groups](img/06_users_groups.png)
+H2 service running  
+TCP port 9092 open  
+Web console on port 8082
+
+#### Application VM (Spring Boot)
+```bash
+bolt command run 'systemctl is-active springboot && curl -f http://localhost:8080/greeting' --targets app
+```
+
+Expected:
+```
+active
+{"id":1,"content":"Hello, World!"}
+```
+
+Spring Boot service running  
+Port 8080 open  
+REST API responding
+
+**Access URLs:**
+- **H2 Web Console:** http://192.168.56.13:8082
+- **H2 TCP Server:** jdbc:h2:tcp://192.168.56.13:9092//home/vagrant/mydb/mydb
+- **Spring Boot API:** http://192.168.56.12:8080/greeting
 
 ---
 
-## Step 7: Verify PAM Password Policy
+### Application Running
 
-```powershell
-bolt command run 'cat /etc/security/pwquality.conf' --targets all
-bolt command run 'cat /etc/security/faillock.conf' --targets all
+Test the REST API:
+```bash
+curl http://192.168.56.12:8080/greeting
 ```
 
-Policy enforced:
-- Minimum 12 characters
-- At least 3 of 4 character classes
-- Dictionary words rejected
-- Username in password rejected
-- Last 5 passwords remembered
-- Account locked after 5 failed attempts for 10 minutes
+**Expected Response:**
+```json
+{
+  "id": 1,
+  "content": "Hello, World!"
+}
+```
 
-![PAM Configuration](img/07_pam_config.png)
+**Available Endpoints:**
+- `GET /greeting` - Returns greeting message
+- `GET /greeting?name=User` - Returns personalized greeting
+- `GET /employees` - Returns employee list (from first deployment screenshot)
 
 ---
 
-## Step 8: Test Endpoints
+### Application Logs
 
-Open in browser:
-- Spring Boot: http://192.168.56.12:8080/employees
-- H2 Console: http://192.168.56.13:8082
+View Spring Boot logs:
+```bash
+bolt command run 'tail -30 /var/log/springboot/springboot.log' --targets app
+```
 
-![Spring Boot Browser](img/08_springboot_browser.png)
-![H2 Console Browser](img/09_h2_console_browser.png)
+**Key Log Entries:**
+```
+INFO: Starting Application
+INFO: HikariPool-1 - Starting...
+INFO: H2 database URL: jdbc:h2:tcp://192.168.56.13:9092//home/vagrant/mydb/mydb
+INFO: Tomcat started on port(s): 8080 (http)
+INFO: Started Application in 6.362 seconds
+```
 
 ---
 
-## Troubleshooting
+## Conclusion
 
-### Connection Issues
-```powershell
-bolt inventory show --targets all
-bolt command run 'uptime' --targets all
-```
+### Project Requirements
 
-Se falhar:
-- Verifica se as VMs estão running: `vagrant status` (no diretório Vagrant)
-- Verifica caminhos das chaves SSH no `inventory.yaml`
-- Testa SSH manualmente (ver Step 0.3)
+Both Ansible and Puppet Bolt successfully achieve all CA4 requirements:
 
-### Service Issues
-```powershell
+| Requirement | Ansible | Puppet Bolt |
+|-------------|---------|-------------|
+| Deploy Spring Boot app | Yes | Yes |
+| Configure H2 database | Yes | Yes |
+| Enforce PAM policy | Yes | Yes |
+| Create users/groups | Yes | Yes |
+| Secure permissions | Yes | Yes |
+| Health checks | Yes | Yes |
+| Idempotent execution | Yes | Yes |
+
+---
+
+## Quick Reference
+
+### Common Commands
+```bash
+# Verify inventory
+bolt inventory show --targets all_vms
+
+# Test connectivity
+bolt command run 'uptime' --targets all_vms
+
+# Run deployment
+bolt plan run deploy --targets all_vms
+
+# Check service status
 bolt command run 'systemctl status h2' --targets db
 bolt command run 'systemctl status springboot' --targets app
-bolt command run 'journalctl -u springboot -n 50' --targets app
+
+# View logs
+bolt command run 'tail -20 /var/log/h2/h2.log' --targets db
+bolt command run 'tail -20 /var/log/springboot/springboot.log' --targets app
+
+# Test API
+curl http://192.168.56.12:8080/greeting
+curl http://192.168.56.12:8080/employees
 ```
-
-Se o serviço não iniciar:
-- Verifica logs: `journalctl -u <servico> -n 100`
-- Verifica se as portas estão ocupadas: `ss -tln | grep -E ":(9092|8082|8080)"`
-- Restart manual: `systemctl restart <servico>`
-
-### Build Failures
-
-```powershell
-bolt command run 'cd /home/vagrant/app/complete && ./gradlew clean build --stacktrace' --targets app --run-as devuser
-```
-
-### "bolt: command not found"
-
-Fechaste e reabriste o PowerShell após instalar o Bolt? Se não, faz isso.
-
-Ou verifica se está no PATH:
-```powershell
-$env:PATH
-```
-
-Deve conter algo como `C:\Program Files\Puppet Labs\Bolt\bin`
-
----
-
-## Checklist Final
-
-Após completar todos os steps, verifica:
-
-- [ ] VMs do CA3 Part 2 estão running
-- [ ] Puppet Bolt instalado (`bolt --version` funciona)
-- [ ] Conectividade testada (Step 1)
-- [ ] Inventário mostra 2 VMs (Step 2)
-- [ ] Deployment executado com sucesso (Step 3)
-- [ ] Segunda execução mostra 0 mudanças (Step 4)
-- [ ] Health checks passam (Step 5)
-- [ ] User `devuser` e group `developers` existem (Step 6)
-- [ ] PAM policy configurada (Step 7)
-- [ ] Endpoints acessíveis no browser (Step 8)
-- [ ] 9 screenshots tirados e guardados em `img/`
-
----
-
-## Tempo Estimado
-
-- **Prerequisites (Step 0):** 10-15 minutos
-- **Step 1-2:** 5 minutos
-- **Step 3 (primeira execução):** 8-12 minutos
-- **Step 4-8:** 10-15 minutos
-- **Total:** ~40-50 minutos
-
----
-
-## Problemas Comuns
-
-### 1. "Failed to connect to target"
-
-**Causa:** VMs não estão running ou IPs incorretos
-
-**Solução:**
-```powershell
-cd Vagrant
-vagrant status
-vagrant up  # se necessário
-cd ..
-```
-
-### 2. "Permission denied (publickey)"
-
-**Causa:** Chaves SSH com permissões erradas
-
-**Solução:**
-```powershell
-icacls "Vagrant\.vagrant\machines\app\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
-icacls "Vagrant\.vagrant\machines\db\virtualbox\private_key" /inheritance:r /grant:r "$($env:USERNAME):R"
-```
-
-### 3. Serviços não iniciam
-
-**Causa:** Portas já em uso ou erros de configuração
-
-**Solução:**
-```powershell
-# Ver logs
-bolt command run 'journalctl -u h2 -n 100' --targets db
-bolt command run 'journalctl -u springboot -n 100' --targets app
-
-# Verificar portas
-bolt command run 'ss -tln | grep -E ":(9092|8082|8080)"' --targets all
-```
-
-### 4. Build Gradle falha
-
-**Causa:** Falta de dependências ou problemas de rede
-
-**Solução:**
-```powershell
-# Rebuild com mais detalhes
-bolt command run 'cd /home/vagrant/app/complete && ./gradlew clean build --stacktrace --info' --targets app --run-as devuser
-```
-
-### 5. Idempotência não funciona (mostra mudanças na 2ª execução)
-
-**Causa:** Isto é normal se for logo após a primeira execução e serviços ainda estarem a estabilizar
-
-**Solução:** Aguarda 1-2 minutos e tenta novamente
-
----
-
-## Requirements Compliance
-
-- ✅ Deploy Spring Boot with configuration management (Puppet Bolt)
-- ✅ Deploy H2 Database with configuration management (Puppet Bolt)
-- ✅ Idempotent configurations (verified with 2nd run)
-- ✅ PAM password policy (12 chars, 3 classes, dictionary, history, lockout)
-- ✅ Group `developers` (GID 3000) and user `devuser` (UID 3000)
-- ✅ Directory permissions 0750 (only developers group)
-- ✅ Health checks (HTTP for app, TCP port for db)
-- ✅ Inventory provided (`inventory.yaml`)
-
----
-
-## Summary
-
-Este tutorial guia-te através da implementação completa do CA4 usando Puppet Bolt:
-
-1. **Instalação do zero** (sem Chocolatey)
-2. **Verificação de prerequisites** (VMs, conectividade)
-3. **Deployment automatizado** (users, PAM, H2, Spring Boot)
-4. **Verificação de idempotência** (2ª execução)
-5. **Validação completa** (health checks, endpoints)
-6. **Screenshots** para relatório
-
-Seguindo estes passos do início ao fim, consegues completar o CA4 com sucesso.
-
-**Próximo passo:** Fazer commit com tag `ca4`
-
-```powershell
-git add CA4/
-git commit -m "feat: Add CA4 Puppet Bolt implementation"
-git tag ca4
-git push origin main
-git push origin ca4
-```
-
