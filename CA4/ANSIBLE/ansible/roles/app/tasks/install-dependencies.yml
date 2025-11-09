@@ -1,0 +1,47 @@
+---
+- name: Show start message
+  debug:
+    msg: "🚀 Starting App VM provisioning..."
+
+- name: Update apt repositories
+  apt:
+    update_cache: yes
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  register: apt_update
+
+- name: Print apt update result
+  debug:
+    var: apt_update
+
+- name: Install dependencies (Java, Git, Gradle)
+  apt:
+    name:
+      - openjdk-17-jdk
+      - git
+      - gradle
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  register: install_result
+
+
+- name: Print installation result
+  debug:
+    var: install_result
+
+- name: Verify installations
+  shell: |
+    java -version
+    git --version
+    gradle -v
+  register: verify_output
+  ignore_errors: yes
+
+- name: Show installed versions
+  debug:
+    var: verify_output.stdout_lines
+
+- name: Finished provisioning
+  debug:
+    msg: "✅ App VM setup completed successfully!"

@@ -1,0 +1,24 @@
+---
+- name: Configure common settings on all VMs
+  hosts: app,db
+  become: yes
+  roles:
+    - common
+
+- name: Configure DB VM
+  hosts: db
+  become: yes
+  roles:
+    - db
+
+- name: Configure App VM
+  hosts: app
+  become: yes
+  roles:
+    - app
+
+- name: Enforce PAM password policy on all VMs
+  hosts: app,db
+  become: yes
+  roles:
+    - pam_password_policy

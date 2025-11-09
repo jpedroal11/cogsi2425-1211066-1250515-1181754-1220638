@@ -1,0 +1,6 @@
+---
+- name: Install and configure H2 database
+  include_tasks: install-dependencies.yml
+
+- name: Include health checks
+  include_tasks: health-check.yml

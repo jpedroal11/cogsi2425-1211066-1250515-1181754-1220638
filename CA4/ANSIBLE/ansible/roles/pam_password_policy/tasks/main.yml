@@ -1,0 +1,53 @@
+---
+- name: Install required packages
+  apt:
+    name:
+      - libpam-pwquality
+      - libpam-modules
+    state: present
+  become: yes
+
+- name: Configure password complexity
+  template:
+    src: pwquality.conf.j2
+    dest: /etc/security/pwquality.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+
+- name: Configure PAM faillock for account lockout
+  template:
+    src: faillock.conf.j2
+    dest: /etc/security/faillock.conf
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+
+- name: Ensure PAM modules use pwquality and faillock
+  lineinfile:
+    path: /etc/pam.d/common-password
+    regexp: '^password\s+requisite\s+pam_pwquality.so'
+    line: 'password requisite pam_pwquality.so retry=3 enforce_for_root'
+    state: present
+    backrefs: yes
+  become: yes
+
+- name: Configure pam_unix for password history
+  lineinfile:
+    path: /etc/pam.d/common-password
+    regexp: '^password\s+requisite\s+pam_unix.so'
+    line: 'password [success=1 default=ignore] pam_unix.so remember=5 sha512'
+    state: present
+    backrefs: yes
+  become: yes
+
+- name: Ensure account lockout after failed attempts
+  lineinfile:
+    path: /etc/pam.d/common-auth
+    regexp: '^auth\s+required\s+pam_tally2.so'
+    line: 'auth required pam_faillock.so preauth silent deny=5 unlock_time=600'
+    state: present
+    backrefs: yes
+  become: yes

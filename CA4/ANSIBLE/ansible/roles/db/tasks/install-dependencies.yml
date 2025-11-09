@@ -1,0 +1,79 @@
+---
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install dependencies (Java 17 + wget)
+  apt:
+    name:
+      - openjdk-17-jdk
+      - wget
+    state: present
+
+- name: Create directory for H2
+  file:
+    path: /opt/h2
+    state: directory
+    mode: '0755'
+
+- name: Download H2 Database JAR
+  get_url:
+    url: https://repo1.maven.org/maven2/com/h2database/h2/2.4.240/h2-2.4.240.jar
+    dest: /opt/h2/h2.jar
+    mode: '0755'
+  register: download_result
+  retries: 3
+  delay: 5
+  until: download_result is succeeded
+
+- name: Create directory for database files
+  file:
+    path: /home/vagrant/mydb
+    state: directory
+    mode: '0755'
+    owner: vagrant
+    group: vagrant
+
+- name: Check if H2 is already running on port 9092
+  shell: ss -tln | awk '{print $4}' | grep -q ':9092' && echo "running" || echo "stopped"
+  register: h2_status
+  changed_when: false
+
+- name: Start H2 TCP server (only if not running)
+  shell: |
+    nohup java -cp /opt/h2/h2.jar org.h2.tools.Server \
+      -tcp -tcpAllowOthers -tcpPort 9092 \
+      -web -webAllowOthers -webPort 8082 \
+      -ifNotExists \
+      > /opt/h2/h2.log 2>&1 &
+  args:
+    chdir: /opt/h2
+  when: "'stopped' in h2_status.stdout"
+
+
+- name: Display H2 info
+  debug:
+    msg: |
+      ✅ H2 Database running:
+      - TCP port: 9092
+      - Web Console: http://192.168.56.13:8082
+      - JDBC URL: jdbc:h2:tcp://192.168.56.13:9092//home/vagrant/mydb/mydb
+
+
+- name: Change ownership of database directory to devuser:developers
+  file:
+    path: /home/vagrant/mydb
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'
+
+- name: Change ownership of H2 directory to devuser:developers
+  file:
+    path: /opt/h2
+    owner: devuser
+    group: developers
+    recurse: yes
+    mode: '0750'

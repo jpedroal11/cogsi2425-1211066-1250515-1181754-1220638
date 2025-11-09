@@ -1,0 +1,78 @@
+- name: Show start message
+  debug:
+    msg: "⚙️ Starting build process for the Spring Boot app..."
+
+- name: Ensure Gradle wrapper is executable
+  file:
+    path: "{{ project_dir }}/gradlew"
+    mode: '0755'
+    state: file
+
+- name: Stop any existing Gradle daemon processes
+  shell: |
+    pgrep -f 'Gradle' && pkill -f 'Gradle' || echo "No Gradle process found."
+    pgrep -f 'java -jar' && pkill -f 'java -jar' || echo "No standalone process found."
+  ignore_errors: yes
+  failed_when: false
+
+- name: Build the Spring Boot app using Gradle wrapper
+  shell: ./gradlew clean build -x test -x integrationTest --no-daemon
+  args:
+    chdir: "{{ project_dir }}"
+  environment:
+    JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+    PATH: "{{ ansible_env.PATH }}:/usr/lib/jvm/java-17-openjdk-amd64/bin"
+  register: build_output
+  changed_when: "'BUILD SUCCESSFUL' in build_output.stdout"
+  poll: 10
+
+- name: Show build result
+  debug:
+    var: build_output.stdout_lines
+
+- name: Check if Spring Boot app is already running on port 8080
+  shell: |
+    ss -tln | awk '{print $4}' | grep -q ':8080' && echo "running" || echo "stopped"
+  register: app_status
+  changed_when: false
+
+
+- name: Run Spring Boot app using Gradle wrapper (bootRun)
+  shell: nohup ./gradlew bootRun > {{ project_dir }}/app.log 2>&1 &
+  args:
+    chdir: "{{ project_dir }}"
+  environment:
+    JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+    PATH: "{{ ansible_env.PATH }}:/usr/lib/jvm/java-17-openjdk-amd64/bin"
+  async: 10
+  poll: 0
+  failed_when: "'FAILURE' in build_output.stdout"
+  when: "'stopped' in app_status.stdout"
+
+# --- Wait for app to finish startup and connect ---
+- name: Wait for Spring Boot app to fully start (check logs for DB connection)
+  shell: |
+    timeout 60 bash -c 'until grep -q "Connected to" {{ project_dir }}/app.log || grep -q "Started" {{ project_dir }}/app.log; do sleep 2; done'
+  register: wait_for_startup
+  ignore_errors: yes
+
+- name: Tail final Spring Boot logs
+  shell: tail -n 500 {{ project_dir }}/app.log
+  register: app_logs
+  ignore_errors: yes
+
+- name: Show logs until connection confirmation
+  debug:
+    var: app_logs.stdout_lines
+
+# --- Save logs safely ---
+- name: Ensure logs directory exists
+  file:
+    path: "{{ project_dir }}/logs"
+    state: directory
+    mode: '0755'
+
+- name: Save Spring Boot logs to file
+  copy:
+    content: "{{ app_logs.stdout }}"
+    dest: "{{ project_dir }}/logs/ansible_app_logs.txt"
