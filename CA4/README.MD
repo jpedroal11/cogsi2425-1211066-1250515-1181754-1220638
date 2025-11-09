@@ -6,7 +6,7 @@
 
 ## Puppet Bolt:
 
-[PUPPET BOLT](PUPPET_BOLT/README.md)
+[PUPPET BOLT](CA4_Part1_Puppet_Bolt/README.md)
 
 # Team Self-Assessment
 
