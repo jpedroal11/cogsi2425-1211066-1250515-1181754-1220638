@@ -1,0 +1,6 @@
+{
+  "description": "Setup H2 Database Server",
+  "supports_noop": false,
+  "input_method": "environment"
+}
+
