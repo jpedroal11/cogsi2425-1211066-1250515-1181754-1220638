@@ -1,6 +1,6 @@
-# Main deployment plan
+# Main deployment plan (Agentless)
 
-plan deploy(
+plan cogsi_ca4_bolt::deploy(
   TargetSpec $targets = 'vms',
 ) {
   
@@ -11,31 +11,27 @@ plan deploy(
   
   # Step 1: Apply common configuration
   out::message('[Step 1/4] Applying common configuration (users, groups, PAM)...')
-  apply($targets) {
-    include common
-  }
+  run_task('common::setup', $targets)
   out::message('Common configuration applied')
   out::message('')
   
   # Step 2: Configure database VM
   out::message('[Step 2/4] Configuring database VM (H2)...')
-  apply('db') {
-    include database
-  }
+  run_task('database::setup', 'db')
   out::message('Database configured')
   out::message('')
   
   # Step 3: Configure application VM
   out::message('[Step 3/4] Configuring application VM (Spring Boot)...')
-  apply('app') {
-    include application
-  }
+  run_task('application::setup', 'app', {
+    'db_host' => '192.168.56.13'
+  })
   out::message('Application configured')
   out::message('')
   
   # Step 4: Run health checks
   out::message('[Step 4/4] Running health checks...')
-  run_plan('healthcheck', targets => $targets)
+  run_plan('cogsi_ca4_bolt::healthcheck', targets => $targets)
   out::message('')
   
   out::message('======================================')
@@ -47,4 +43,3 @@ plan deploy(
   
   return 'Deployment finished'
 }
-
