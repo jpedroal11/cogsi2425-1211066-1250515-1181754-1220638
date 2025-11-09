@@ -1,0 +1,6 @@
+{
+  "description": "Health check for H2 Database",
+  "supports_noop": false,
+  "input_method": "environment"
+}
+
