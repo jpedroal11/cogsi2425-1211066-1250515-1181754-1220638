@@ -5,14 +5,19 @@ groups:
     targets:
       - name: app
         uri: vagrant@192.168.56.12:22
+        config:
+          ssh:
+            private-key: ../Vagrant/.vagrant/machines/app/virtualbox/private_key
       
       - name: db
         uri: vagrant@192.168.56.13:22
+        config:
+          ssh:
+            private-key: ../Vagrant/.vagrant/machines/db/virtualbox/private_key
     
     config:
       transport: ssh
       ssh:
-        private-key: bolt_rsa_key
         host-key-check: false
         native-ssh: true
         run-as: root

@@ -1,6 +1,6 @@
 # Health check plan
 
-plan healthcheck(
+plan cogsi_ca4_bolt::healthcheck(
   TargetSpec $targets = 'vms',
 ) {
   
@@ -12,9 +12,9 @@ plan healthcheck(
   $db_check = run_task('healthcheck::check_db', 'db')
   
   if $db_check.ok() {
-    out::message('Database health check: PASSED')
+    out::message('  Database health check: PASSED')
   } else {
-    out::message('Database health check: FAILED')
+    out::message('  Database health check: FAILED')
   }
   out::message('')
   
@@ -23,19 +23,15 @@ plan healthcheck(
   $app_check = run_task('healthcheck::check_app', 'app')
   
   if $app_check.ok() {
-    out::message('Application health check: PASSED')
+    out::message('  Application health check: PASSED')
   } else {
-    out::message('Application health check: FAILED')
+    out::message('  Application health check: FAILED')
   }
   out::message('')
   
-  out::message('Health check summary:')
-  out::message("  - Database: ${db_check.ok() ? 'OK' : 'FAILED'}")
-  out::message("  - Application: ${app_check.ok() ? 'OK' : 'FAILED'}")
-  
   return {
-    'database' => $db_check,
-    'application' => $app_check,
+    database => $db_check,
+    application => $app_check,
   }
 }
 

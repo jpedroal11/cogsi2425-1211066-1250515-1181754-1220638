@@ -1,0 +1,6 @@
+{
+  "description": "Health check for Spring Boot Application",
+  "supports_noop": false,
+  "input_method": "environment"
+}
+
