@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk
+FROM eclipse-temurin:17-jdk AS builder
 
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
@@ -11,6 +11,12 @@ WORKDIR /app/CA2/PART_1/gradle_basic_demo-main
 RUN chmod +x ./gradlew
 
 RUN ./gradlew clean build -x test
+
+FROM eclipse-temurin:17-jdk
+
+WORKDIR /app
+
+COPY --from=builder /app/CA2/PART_1/gradle_basic_demo-main /app
 
 EXPOSE 59001
 
