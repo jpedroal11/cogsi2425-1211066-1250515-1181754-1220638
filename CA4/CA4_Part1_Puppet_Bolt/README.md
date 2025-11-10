@@ -297,7 +297,7 @@ bolt plan run deploy --targets all_vms
 
 #### Second Run (Idempotency)
 
-![Second Deployment](outputs/screenshots/04_second_deployment.png)
+![Second Deployment](img/04_second_deployment.png)
 
 *Second run shows minimal changes, proving idempotency.*
 
