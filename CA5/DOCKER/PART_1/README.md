@@ -245,3 +245,56 @@ In here it is created a multi-stage build Dockerfile:
     
 
 ![img.png](img/docker_history_multistage_chat_v2.png)
+
+### Docker Stats
+Using the docker stats command, we can monitor the resource usage of running Docker containers in real-time.
+
+```bash
+docker stats
+```
+
+We got the following result for v1.Dockerfile and v1.multistage.Dockerfile:
+
+![img.png](img/docker_v1_chatapp_stats.png)
+
+![img.png](img/docker_v1_chatapp_multistage_stats.png)
+
+We can see the 2st image(multistage) is using less memory and CPU than the 1st image(single stage). This is because the multistage build results in a smaller and more efficient Docker image, which requires fewer resources to run.
+
+
+For the v2.Dockerfile and v2.multistage.Dockerfile:
+
+![img.png](img/docker_v2_chatapp_stats.png)
+
+![img.png](img/docker_v2_chatapp_multistage_stats.png)
+
+
+## Docker Hub
+
+Docker Hub is a cloud-based repository service provided by Docker that allows users to store, share, and manage Docker container images. It serves as a centralized platform where developers can publish their Docker images, making them accessible to others for download and use.
+To push the Docker images to Docker Hub, follow these steps:
+1. Create a Docker Hub account if you don't have one already.
+2. Log in to your Docker Hub account from the command line:
+```bash
+docker login
+```
+3. Tag your Docker images with your Docker Hub username and repository name:
+```bash
+docker tag chatapp:latest your_dockerhub_username/chatter-app:latest
+```
+
+```bash
+docker tag chatapp dockerhub_username/chattapp:latest
+```
+
+4. Push the tagged images to Docker Hub:
+```bash
+docker push your_dockerhub_username/chatapp:latest
+```
+
+```bash
+docker push dockerhub_username/chattapp:latest
+```
+
+
+![img.png](img/docker_hub.png)
