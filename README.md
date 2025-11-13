@@ -1,6 +1,5 @@
 # cogsi2425-1211066-1250515-1181754
 
-## Course Information
 **Institution:** Instituto Superior de Engenharia do Porto (ISEP)  
 **Program:** Master's in Cibersecurity and Systems Administration  
 **Class:** Configuration and Systems Management
