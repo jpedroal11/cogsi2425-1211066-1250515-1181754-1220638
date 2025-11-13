@@ -5,7 +5,7 @@
 **Class:** Configuration and Systems Management
 
 ## About This Repository
-This repository contains the class assignments completed as part of the COGSI course, exploring DevOps concepts and tools through practical implementations.
+This repository contains the class assignments completed as part of the COGSI class, exploring DevOps concepts and tools through practical implementations.
 
 ## Course Structure
 The course consists of 6 class assignments (CA), each focusing on different DevOps tools and practices. Each assignment explores a primary tool and alternative solutions:
